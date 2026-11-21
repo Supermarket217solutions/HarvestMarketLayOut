@@ -298,6 +298,7 @@
     .style-circle { background: #fff; border: 2px solid #000; border-radius: 9999px; color: #000; font-weight: 700; }
     .style-note   { background: transparent; border: 1px dashed #94a3b8; color: #000; text-align: left; align-items: flex-start; justify-content: flex-start; padding: 4px 6px; font-weight: 600; }
     .style-badge  { background: #000; border: 1.5px solid #000; color: #fff; border-radius: 4px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; }
+    .style-landmark { background: #065f46; border: 2px solid #022c22; color: #fff; font-weight: 800; letter-spacing: .05em; border-radius: 6px; }
     .style-room   { background: #fff; border-left: 2px solid #000; border-bottom: 2px solid #000; border-top: none; border-right: none; color: #000; font-weight: 800; }
 
     /* Heavier, crisper map text */
@@ -423,6 +424,7 @@
     .swatch.style-badge { width: 24px; height: 20px; }
     .swatch.style-circle { width: 22px; height: 22px; }
     .swatch.style-room { width: 28px; }
+    .swatch.style-landmark { background: #065f46; border-color: #022c22; }
 
     /* =====================================================================
        STORE INFO DRAWER
@@ -497,6 +499,48 @@
     .tour-dots i.on { background: var(--brand-d); width: 18px; border-radius: 4px; }
     .tour-actions { display: flex; align-items: center; gap: 8px; }
     .tour-actions .grow { flex: 1; }
+    /* ---- Quick action bar (floats above the selected box) ---- */
+    .quickbar { position: fixed; z-index: 45; display: flex; gap: 2px; padding: 4px; background: #0f172a; border-radius: 14px; box-shadow: 0 10px 28px rgba(15, 23, 42, .4); }
+    .quickbar > button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 54px; min-height: 46px; padding: 5px 6px; background: transparent; color: #fff; border: 0; border-radius: 10px; font-size: 11px; font-weight: 700; line-height: 1; }
+    .quickbar > button:hover, .quickbar > button:active { background: rgba(255, 255, 255, .14); }
+    .quickbar > button.danger { color: #fda4af; }
+    .quickbar > button.is-locked { opacity: .45; }
+    .quickbar .i { width: 18px; height: 18px; }
+    .qb-colors { position: absolute; left: 50%; top: calc(100% + 8px); transform: translateX(-50%); display: flex; gap: 8px; padding: 10px; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 28px rgba(15, 23, 42, .25); }
+    .quickbar.below .qb-colors { top: auto; bottom: calc(100% + 8px); }
+    .sw { width: 34px; height: 34px; flex: none; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1.5px #94a3b8; padding: 0; position: relative; }
+    .sw.none { background: linear-gradient(135deg, #fff 45%, #e11d48 46%, #e11d48 54%, #fff 55%); }
+    .sw.on { box-shadow: 0 0 0 3px #2563eb; }
+    .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+    .btn[aria-disabled="true"] { opacity: .5; }
+
+    /* ---- Share + print dialogs ---- */
+    .share-list { display: grid; gap: 8px; }
+    .share-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px 14px; background: #fff; border: 1px solid var(--line-2); border-radius: 14px; min-height: 60px; }
+    .share-row:hover { background: #f8fafc; }
+    .share-row .i { width: 22px; height: 22px; flex: none; color: var(--brand-d); }
+    .share-row b { display: block; font-size: 14px; }
+    .share-row small { display: block; color: var(--muted); font-size: 12px; margin-top: 1px; }
+    .share-row.primary { border-color: var(--brand-d); background: #ecfdf5; }
+    .pv-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
+    .pv-row .fld { flex: 1 1 140px; }
+    .pv-row label { display: block; font-size: 12px; font-weight: 700; color: var(--ink-2); margin-bottom: 4px; }
+    .pv-row select { width: 100%; min-height: 42px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: 10px; background: #fff; }
+    #print-preview-wrap { display: grid; place-items: center; padding: 14px; background: #e6eaf0; border-radius: 12px; min-height: 160px; }
+    #print-preview { position: relative; background: #fff; box-shadow: 0 4px 16px rgba(15, 23, 42, .25); overflow: hidden; }
+    #print-preview .pv-head { position: absolute; display: flex; justify-content: space-between; font-weight: 800; color: #000; white-space: nowrap; }
+    #print-preview .pv-map { position: absolute; transform-origin: 0 0; width: 1400px; height: 980px; pointer-events: none; }
+    #print-preview .pv-map #floor-canvas { background-image: none; box-shadow: none; border: none; }
+    .pv-note { margin: 10px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+
+    /* ---- Read-only (shared link) mode ---- */
+    #viewonly-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 14px; background: #ecfdf5; border-bottom: 1px solid #a7f3d0; color: #064e3b; font-size: 13px; font-weight: 600; }
+    #viewonly-bar span { flex: 1 1 200px; }
+    body.viewonly { --bar-h: 0px !important; }
+    body.viewonly #inspector-panel, body.viewonly #mobile-bottom-bar, body.viewonly #edit-sheet, body.viewonly #add-sheet, body.viewonly #quickbar,
+    body.viewonly #main-toolbar .tool-group, body.viewonly #main-toolbar .seg, body.viewonly #main-toolbar #btn-snap, body.viewonly #main-toolbar .btn-soft-danger,
+    body.viewonly .appbar .file-btn, body.viewonly .menu-edit-only { display: none !important; }
+
     .tour-actions .btn { min-height: 44px; padding: 0 16px; font-size: 14px; }
     .tour-skip { min-height: 44px; padding: 0 6px !important; font-size: 14px !important; color: var(--muted) !important; }
 
@@ -516,16 +560,18 @@
       #search-results-popover, #toast-container, .modal, #info-drawer, .canvas-watermark, .resize-handle, .no-print { display: none !important; }
       .main, .canvas-region { display: block !important; overflow: visible !important; }
       #workspace { display: block !important; overflow: visible !important; background: #fff !important; padding: 0 !important; }
-      #canvas-pad { margin: 0 auto !important; padding: 0 !important; width: 980px; }
-      #canvas-sizer { width: 980px !important; height: 686px !important; overflow: hidden; }
-      #canvas-scaler { position: static !important; transform: none !important; width: 1400px !important; height: 980px !important; zoom: 0.7; }
+      #viewonly-bar, #quickbar { display: none !important; }
+      #canvas-pad { margin: 0 auto !important; padding: 0 !important; width: calc(1400px * var(--pz, .7)); }
+      #canvas-sizer { width: calc(1400px * var(--pz, .7)) !important; height: calc(980px * var(--pz, .7)) !important; overflow: hidden; }
+      #canvas-scaler { position: static !important; transform: none !important; width: 1400px !important; height: 980px !important; zoom: var(--pz, .7); }
       #floor-canvas { background-image: none !important; background-color: #fff !important; border: none !important; box-shadow: none !important; }
-      .print-only { display: flex !important; justify-content: space-between; align-items: baseline; width: 980px; margin: 0 auto 6px; font-size: 13px; font-weight: 800; color: #000; }
+      .print-only { display: flex !important; justify-content: space-between; align-items: baseline; width: calc(1400px * var(--pz, .7)); margin: 0 auto 6px; font-size: 13px; font-weight: 800; color: #000; }
       .print-only span.d { font-weight: 600; font-size: 11px; }
       .plan-item.selected, .plan-item.search-match, .plan-item.pulse { outline: none !important; box-shadow: none !important; animation: none !important; }
       .plan-item.search-dimmed { opacity: 1 !important; }
       .style-note { border: none !important; }
-      .style-shaded, .style-badge { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .style-shaded, .style-badge, .style-landmark, .plan-item.has-fill { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .style-landmark { background-color: #000 !important; color: #fff !important; border-color: #000 !important; }
       .style-shaded { background-color: #e5e7eb !important; }
       .style-badge { background-color: #000 !important; color: #fff !important; }
     }
@@ -556,6 +602,8 @@
       <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></symbol>
       <symbol id="i-trash" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></symbol>
       <symbol id="i-copy" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></symbol>
+      <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6.5 6.6 6.5 11.2a6.5 6.5 0 11-13 0C5.5 9.6 12 3 12 3z"/></symbol>
+      <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a5 5 0 007.07 0l3-3a5 5 0 00-7.07-7.07l-1.5 1.5M14 10a5 5 0 00-7.07 0l-3 3a5 5 0 007.07 7.07l1.5-1.5"/></symbol>
       <symbol id="i-up" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></symbol>
       <symbol id="i-down" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></symbol>
       <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></symbol>
@@ -591,6 +639,9 @@
       <button class="btn btn-dark btn-icon only-desktop" onclick="openHelp()" aria-label="Help" title="Quick help">
         <svg class="i"><use href="#i-help"/></svg>
       </button>
+      <button class="btn btn-dark only-desktop" onclick="openShare()" title="Share a link, save a picture, or download a backup">
+        <svg class="i"><use href="#i-share"/></svg><span>Share</span>
+      </button>
       <button class="btn btn-dark only-desktop" onclick="exportJSON()" title="Download a backup of your layout">
         <svg class="i"><use href="#i-download"/></svg><span>Save</span>
       </button>
@@ -598,8 +649,8 @@
         <svg class="i"><use href="#i-upload"/></svg><span>Load</span>
         <input type="file" id="import-input" accept=".json,application/json" onchange="importJSON(event)">
       </label>
-      <button class="btn btn-primary" onclick="printCleanBW()" aria-label="Print black and white">
-        <svg class="i"><use href="#i-print"/></svg><span class="hide-xs">Print B&amp;W</span>
+      <button class="btn btn-primary" onclick="openPrintSetup()" aria-label="Print or save as PDF">
+        <svg class="i"><use href="#i-print"/></svg><span class="hide-xs">Print / PDF</span>
       </button>
       <button class="btn btn-dark btn-icon only-mobile" onclick="openSheet('menu-sheet')" aria-label="More options">
         <svg class="i"><use href="#i-menu"/></svg>
@@ -639,6 +690,7 @@
       <button class="btn" onclick="addNewItem('angled')">+ Table</button>
       <button class="btn" onclick="addNewItem('badge')">+ #</button>
       <button class="btn" onclick="addNewItem('note')">+ Note</button>
+      <button class="btn" onclick="addNewItem('landmark')">+ Landmark</button>
     </div>
 
     <div class="tool-group">
@@ -649,6 +701,11 @@
     <button id="btn-text" class="btn only-desktop" onclick="cycleTextSize()" title="Make the words on the map bigger or smaller">Text: Large</button>
     <button id="btn-snap" class="btn btn-soft-blue only-desktop" onclick="toggleSnap()" title="Snap items to a 10px grid">Snap: ON</button>
     <button class="btn btn-soft-danger only-desktop" onclick="confirmReset()">Reset</button>
+  </div>
+
+  <div id="viewonly-bar" class="no-print" hidden>
+    <span>You're viewing a shared copy of the store map. It's read-only.</span>
+    <button class="btn btn-solid" onclick="adoptSharedLayout()">Make my own editable copy</button>
   </div>
 
   <!-- Print-only heading -->
@@ -760,6 +817,15 @@
       </div>
     </div>
 
+    <div id="quickbar" class="quickbar no-print" hidden role="toolbar" aria-label="Actions for the selected box">
+      <button onclick="qbRename()"><svg class="i"><use href="#i-pencil"/></svg>Rename</button>
+      <button onclick="qbToggleColors()" aria-haspopup="true"><svg class="i"><use href="#i-drop"/></svg>Color</button>
+      <button onclick="rotateSelectedBy(45)"><svg class="i"><use href="#i-reset"/></svg>Rotate</button>
+      <button onclick="duplicateSelected()"><svg class="i"><use href="#i-copy"/></svg>Copy</button>
+      <button class="danger" id="qb-delete" onclick="deleteSelected()"><svg class="i"><use href="#i-trash"/></svg>Delete</button>
+      <div id="qb-colors" class="qb-colors" hidden></div>
+    </div>
+
     <!-- Desktop inspector -->
     <aside id="inspector-panel" aria-label="Item details">
       <div id="desktop-no-selection" class="empty-state">
@@ -815,6 +881,7 @@
         <button class="tile" onclick="closeAllSheets(); addNewItem('endcap')"><span class="swatch style-endcap" style="width:20px;height:30px"></span><b>Endcap</b><small>Tall display at an aisle end</small></button>
         <button class="tile" onclick="closeAllSheets(); addNewItem('angled')"><span class="swatch style-shaded"></span><b>Display table</b><small>Gray, angled for seasonal tables</small></button>
         <button class="tile" onclick="closeAllSheets(); addNewItem('badge')"><span class="swatch style-badge"></span><b>Aisle number</b><small>Black number badge</small></button>
+        <button class="tile span2" onclick="closeAllSheets(); addNewItem('landmark')"><span class="swatch style-landmark"></span><b>Landmark</b><small>Entrance, checkout, restrooms, customer service</small></button>
         <button class="tile span2" onclick="closeAllSheets(); addNewItem('note')"><span class="swatch style-note"></span><b>Note</b><small>Free text, no border when printed</small></button>
       </div>
     </div>
@@ -834,12 +901,13 @@
         <button class="tile" onclick="closeAllSheets(); openHelp()"><svg class="i"><use href="#i-help"/></svg><b>Help</b><small>How to move, edit and zoom</small></button>
         <button class="tile" onclick="cycleTextSize()"><span style="font:800 18px Inter,sans-serif;line-height:18px">Aa</span><b data-text-label>Text size: Large</b><small>Tap to cycle bigger / smaller words</small></button>
         <button class="tile" onclick="toggleSnap()"><svg class="i"><use href="#i-grid"/></svg><b data-snap-label>Grid snap: ON</b><small>Keeps moved items lined up</small></button>
+        <button class="tile span2" style="border-color:var(--brand-d);background:#ecfdf5" onclick="closeAllSheets(); openShare()"><svg class="i"><use href="#i-link"/></svg><b>Share &amp; export</b><small>Send a view-only link, save a picture, or print / make a PDF</small></button>
         <button id="btn-share" class="tile" hidden onclick="closeAllSheets(); shareLayout()"><svg class="i"><use href="#i-share"/></svg><b>Share layout</b><small>Send the file to your boss or a coworker</small></button>
         <button class="tile" onclick="closeAllSheets(); exportJSON()"><svg class="i"><use href="#i-download"/></svg><b>Download backup</b><small>Saves a .json copy of your layout</small></button>
-        <label class="tile" style="cursor:pointer"><svg class="i"><use href="#i-upload"/></svg><b>Load backup</b><small>Open a saved .json layout</small>
+        <label class="tile menu-edit-only" style="cursor:pointer"><svg class="i"><use href="#i-upload"/></svg><b>Load backup</b><small>Open a saved .json layout</small>
           <input type="file" accept=".json,application/json" hidden onchange="importJSON(event); closeAllSheets();">
         </label>
-        <button class="btn btn-soft-danger tile span2" style="min-height:48px;align-items:center;flex-direction:row;justify-content:center;gap:8px" onclick="closeAllSheets(); confirmReset()"><svg class="i"><use href="#i-reset"/></svg><b>Reset this view to default</b></button>
+        <button class="btn btn-soft-danger tile span2 menu-edit-only" style="min-height:48px;align-items:center;flex-direction:row;justify-content:center;gap:8px" onclick="closeAllSheets(); confirmReset()"><svg class="i"><use href="#i-reset"/></svg><b>Reset this view to default</b></button>
       </div>
     </div>
   </section>
@@ -874,14 +942,15 @@
         <div class="legend-row"><span class="swatch style-endcap"></span> Endcap or display box</div>
         <div class="legend-row"><span class="swatch style-shaded"></span> Highlighted / product block</div>
         <div class="legend-row"><span class="swatch style-circle"></span> Round display</div>
-        <div class="legend-row"><span class="swatch style-badge" style="font-size:10px;display:inline-grid;place-items:center">7</span> Aisle number</div>
+        <div class="legend-row"><span class="swatch style-badge" style="font-size:10px;display:inline-grid;place-items:center">7</span> Aisle number (each aisle has one number)</div>
+        <div class="legend-row"><span class="swatch style-landmark"></span> Landmark (entrance, checkout, restrooms)</div>
         <div class="legend-row"><span class="swatch style-note"></span> Note (no border when printed)</div>
       </div>
 
       <div class="card">
         <div class="pad">
           <h3>Sharing &amp; backups</h3>
-          <p>Edits save automatically on <b>this device only</b>. To send your version to someone else, use <b>Save</b> (or <b>Share layout</b> on a phone) and have them <b>Load</b> the file.</p>
+          <p>Edits save automatically on <b>this device only</b>. To show your version to someone else, tap <b>Share</b> and copy the <b>view-only link</b>. They just open it. No file needed.</p>
         </div>
       </div>
     </div>
@@ -916,14 +985,66 @@
       <div class="help-list">
         <p style="margin:0"><b>Find something fast.</b> Type an aisle or product in the search box and tap a result. The map zooms to it and flashes it.</p>
         <p style="margin:0"><b>Look around.</b> Drag to scroll, <b>pinch</b> or use the +/− buttons to zoom, <b>double-tap</b> empty space to zoom in or back out, and tap <b>Fit</b> to see the whole store.</p>
-        <p style="margin:0"><b>Edit an item.</b> In <b>Edit</b> mode, tap an item to open its settings — rename it, swap to a seasonal label, change its style, rotate or resize it. Then <b>drag the selected item</b> to move it.</p>
+        <p style="margin:0"><b>Edit an item.</b> In <b>Edit</b> mode, tap a box and a small bar appears right above it: <b>Rename, Color, Rotate, Copy, Delete</b>. Drag the corner square to resize it, or drag the selected box to move it. More settings are in the panel.</p>
         <p style="margin:0"><b>Move lots of things.</b> Switch to <b>Move</b> mode to drag any item directly. Use two fingers to scroll and zoom while in Move mode.</p>
-        <p style="margin:0"><b>Print.</b> <b>Print B&amp;W</b> makes a clean landscape page without the toolbars or grid dots.</p>
-        <p style="margin:0"><b>Saving.</b> Changes save automatically on this device. Use <b>Save</b> to download a backup or send your layout to someone, and <b>Load</b> to open one.</p>
+        <p style="margin:0"><b>Print or PDF.</b> <b>Print / PDF</b> lets you pick the paper size and shows a preview first. Choose <b>Save as PDF</b> as the printer to make a PDF.</p>
+        <p style="margin:0"><b>Share.</b> Changes save automatically on this device. <b>Share</b> gives you a view-only link for your boss and coworkers, a picture, or a backup file.</p>
       </div>
       <div class="modal-actions">
         <button class="btn" onclick="closeHelp(); startTour()">Replay the tutorial</button>
         <button class="btn btn-solid" onclick="closeHelp()">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share & export -->
+  <div id="share-modal" class="modal no-print" hidden onclick="closeShare()">
+    <div class="modal-card" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="share-title">
+      <div class="modal-head">
+        <h2 id="share-title">Share &amp; export</h2>
+        <button class="btn btn-icon" onclick="closeShare()" aria-label="Close"><svg class="i"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="share-list">
+        <button class="share-row primary" onclick="copyShareLink()"><svg class="i"><use href="#i-link"/></svg><span><b>Copy a view-only link</b><small>Anyone who opens it sees your version of the map and can't change it.</small></span></button>
+        <button class="share-row" onclick="savePicture()"><svg class="i"><use href="#i-photo"/></svg><span><b>Save as a picture (PNG)</b><small>Of the map you're looking at, to text or email.</small></span></button>
+        <button class="share-row" onclick="closeShare(); openPrintSetup()"><svg class="i"><use href="#i-print"/></svg><span><b>Print or save as PDF</b><small>Choose paper size and see a preview first.</small></span></button>
+        <button class="share-row" onclick="exportJSON()"><svg class="i"><use href="#i-download"/></svg><span><b>Download a backup file</b><small>A .json copy you can load back in later.</small></span></button>
+      </div>
+      <div id="share-link-out" hidden style="margin-top:12px">
+        <label for="share-link" style="display:block;font-size:12px;font-weight:700;margin-bottom:4px">Your link</label>
+        <input id="share-link" readonly onfocus="this.select()" style="width:100%;min-height:44px;padding:0 10px;border:1px solid var(--line-2);border-radius:10px;font-size:13px">
+        <button class="btn btn-solid" style="margin-top:8px" onclick="copyShareLinkText()">Copy link</button>
+      </div>
+      <p class="pv-note">The link is a snapshot from right now. If you change the map later, copy a new link.</p>
+    </div>
+  </div>
+
+  <!-- Print setup + preview -->
+  <div id="print-modal" class="modal no-print" hidden onclick="closePrintSetup()">
+    <div class="modal-card" style="max-width:600px" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="print-title-h">
+      <div class="modal-head">
+        <h2 id="print-title-h">Print or save as PDF</h2>
+        <button class="btn btn-icon" onclick="closePrintSetup()" aria-label="Close"><svg class="i"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="pv-row">
+        <div class="fld"><label for="pv-paper">Paper size</label>
+          <select id="pv-paper" onchange="onPrintOpt()">
+            <option value="letter">Letter (8.5 × 11 in)</option>
+            <option value="legal">Legal (8.5 × 14 in)</option>
+            <option value="tabloid">Tabloid (11 × 17 in)</option>
+            <option value="a4">A4</option>
+          </select></div>
+        <div class="fld"><label for="pv-orient">Direction</label>
+          <select id="pv-orient" onchange="onPrintOpt()">
+            <option value="landscape">Landscape (wide)</option>
+            <option value="portrait">Portrait (tall)</option>
+          </select></div>
+      </div>
+      <div id="print-preview-wrap"><div id="print-preview" aria-label="Page preview"></div></div>
+      <p class="pv-note">The whole map is fitted onto one page. To make a PDF instead of paper, pick <b>Save as PDF</b> as the printer on the next screen.</p>
+      <div class="modal-actions">
+        <button class="btn" onclick="closePrintSetup()">Cancel</button>
+        <button class="btn btn-primary" onclick="doPrint()"><svg class="i"><use href="#i-print"/></svg>Print / Save PDF</button>
       </div>
     </div>
   </div>
@@ -969,7 +1090,13 @@
           <option value="badge">Aisle number badge (black)</option>
           <option value="note">Text note (no border on print)</option>
           <option value="room">Room / wall label</option>
+          <option value="landmark">Landmark (entrance, checkout…)</option>
         </select>
+      </div>
+
+      <div class="fld">
+        <label>Box color</label>
+        <div class="swatches" id="prop-swatches"></div>
       </div>
 
       <div class="grid2">
@@ -1020,7 +1147,7 @@
 
       <div class="form-actions">
         <button class="btn btn-solid" onclick="duplicateSelected()"><svg class="i i-sm"><use href="#i-copy"/></svg>Duplicate</button>
-        <button class="btn btn-danger" onclick="deleteSelected()"><svg class="i i-sm"><use href="#i-trash"/></svg>Delete</button>
+        <button class="btn btn-danger" id="prop-delete" onclick="deleteSelected()"><svg class="i i-sm"><use href="#i-trash"/></svg>Delete</button>
       </div>
     </div>
   </template>
@@ -1252,6 +1379,62 @@
     ];
 
     // =========================================================================
+    // DATA FIXES (applied to the defaults AND, once, to layouts already saved on a device)
+    // Every fix only touches a box that still has its original value, so your own edits are never overwritten.
+    // =========================================================================
+    const DATA_REV = 3;
+    const LANDMARK_BASE = { style: 'landmark', vertical: false, locked: true };
+    const LANDMARKS = {
+      aisle: [
+        Object.assign({ id: 'lm_entrance', x: 330, y: 940, w: 130, h: 30, text: 'ENTRANCE', fontSize: 11 }, LANDMARK_BASE),
+        Object.assign({ id: 'lm_checkout', x: 470, y: 940, w: 170, h: 30, text: 'CHECKOUT LANES', fontSize: 10.5 }, LANDMARK_BASE),
+        Object.assign({ id: 'lm_cs', x: 650, y: 940, w: 125, h: 30, text: 'CUSTOMER SERVICE', fontSize: 9 }, LANDMARK_BASE),
+        Object.assign({ id: 'lm_restroom', x: 785, y: 940, w: 105, h: 30, text: 'RESTROOMS', fontSize: 10.5 }, LANDMARK_BASE)
+      ],
+      arch: [
+        Object.assign({ id: 'lm_restroom', x: 225, y: 850, w: 105, h: 26, text: 'RESTROOMS', fontSize: 9.5 }, LANDMARK_BASE)
+      ]
+    };
+
+    function applyFixes(items, view) {
+      let out = items.slice();
+      const byId = new Map(out.map((i) => [i.id, i]));
+      const setText = (id, from, to) => { const it = byId.get(id); if (it && it.text === from) it.text = to; };
+      const drop = (id, test) => {
+        const it = byId.get(id);
+        if (it && (!test || test(it))) { out = out.filter((o) => o !== it); byId.delete(id); return true; }
+        return false;
+      };
+      if (view === 'aisle') {
+        setText('f2_r1', 'MARIE\nCALENDER\nMP PIES', "MARIE\nCALLENDER'S\nMP PIES");
+        { const mc = byId.get('f2_r1'); if (mc && mc.text === "MARIE\nCALLENDER'S\nMP PIES" && mc.w === 35) mc.w = 55; }
+        // One number per aisle run, in reading order: left block 1-7, middle block 8-15.
+        const nums = { pd_num: ['1', '1'], db_num: ['4', '2'], lg1_num: ['5', '3'], lg2_num: ['6', '4'], lg3_num: ['7', '5'], lg4_num: ['8', '6'], lg5_num: ['9', '7'],
+          m1_num: ['3', '8'], m2_num: ['5', '9'], m3_num: ['6', '10'], m4_num: ['7', '11'], m5_num: ['8', '12'], m6_num: ['9', '13'], m7_num: ['10', '14'], m8_num: ['11', '15'] };
+        Object.keys(nums).forEach((id) => setText(id, nums[id][0], nums[id][1]));
+        // Display tables / seasonal runs don't get aisle numbers
+        ['melt_num', 'disp_bak_num', 'disp_pie_num', 'disp_beef_num', 'floral_num', 'r1_num', 'sb_num', 'cg_num'].forEach((id) => drop(id, (it) => it.style === 'badge'));
+        // Blank boxes
+        drop('deli_ext', (it) => !it.text);
+        drop('angl_box', (it) => !it.text);
+        // Seven identical candy boxes become one run
+        const cg = byId.get('cg_1');
+        if (cg && cg.h === 42) {
+          cg.h = 294; cg.vertical = true; cg.fontSize = 8.5; cg.text = 'CANDY  |  CHRISTMAS  |  SALT & CIDER';
+          for (let k = 2; k <= 7; k++) drop('cg_' + k, (it) => it.text.indexOf('CANDY') === 0);
+        }
+      } else {
+        const v = byId.get('arch_vest');
+        if (v && v.text === 'VESTIBULE') Object.assign(v, { text: 'ENTRANCE\n(VESTIBULE)', style: 'landmark', locked: true, fontSize: 8.5 });
+        ['arch_cs', 'arch_chk'].forEach((id) => { const it = byId.get(id); if (it && it.style === 'note') Object.assign(it, { style: 'landmark', locked: true }); });
+      }
+      (LANDMARKS[view] || []).forEach((lm) => { if (!byId.has(lm.id)) out.push(Object.assign({ rotation: 0 }, lm)); });
+      return out;
+    }
+    DEFAULT_AISLE_ITEMS.splice(0, DEFAULT_AISLE_ITEMS.length, ...applyFixes(DEFAULT_AISLE_ITEMS, 'aisle'));
+    DEFAULT_ARCH_ITEMS.splice(0, DEFAULT_ARCH_ITEMS.length, ...applyFixes(DEFAULT_ARCH_ITEMS, 'arch'));
+
+    // =========================================================================
     // APPLICATION STATE
     // =========================================================================
     const STORAGE_KEY = 'store_layout_editor_v2';   // same key as before, so saved edits carry over
@@ -1259,7 +1442,10 @@
     const CANVAS_W = 1400, CANVAS_H = 980;
     const GRID = 10;
     const ZMIN = 0.15, ZMAX = 2.5;
-    const STYLES = ['aisle', 'shaded', 'endcap', 'circle', 'note', 'badge', 'room'];
+    const STYLES = ['aisle', 'shaded', 'endcap', 'circle', 'note', 'badge', 'room', 'landmark'];
+    const FILLS = [['No color', ''], ['Yellow', '#fde68a'], ['Green', '#bbf7d0'], ['Blue', '#bfdbfe'], ['Red', '#fecaca'], ['Orange', '#fed7aa'], ['Purple', '#e9d5ff']];
+    let viewOnly = false;        // true when opened from a shared link
+    let sharedLocalBackup = null;
     const VIEW_NAMES = { aisle: 'Aisle Map', arch: 'Blueprint' };
 
     const $ = (id) => document.getElementById(id);
@@ -1301,12 +1487,28 @@
       if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAllText);
       updateInspector();
       if (navigator.share && navigator.canShare) $('btn-share').hidden = false;
-      if (!tourSeen()) setTimeout(startTour, 900);
+      applyPrintPage();
+      maybeLoadShared().then(() => { if (!viewOnly && !tourSeen()) setTimeout(startTour, 900); });
+    }
+
+    function buildSwatches(host) {
+      FILLS.forEach(([name, hex]) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'sw' + (hex ? '' : ' none');
+        b.dataset.fill = hex;
+        if (hex) b.style.background = hex;
+        b.title = name; b.setAttribute('aria-label', name);
+        b.addEventListener('click', () => setSelectedFill(hex));
+        host.appendChild(b);
+      });
     }
 
     function buildInspectorForm() {
       const tpl = $('inspector-form-template');
       inspectorForm = tpl.content.firstElementChild.cloneNode(true);
+      buildSwatches(inspectorForm.querySelector('#prop-swatches'));
+      buildSwatches($('qb-colors'));
       // press-and-hold repeat on the nudge arrows
       inspectorForm.querySelectorAll('#nudge-pad button').forEach((btn) => {
         const dx = +btn.dataset.dx, dy = +btn.dataset.dy;
@@ -1343,6 +1545,8 @@
           vertical: !!raw.vertical
         };
         if (raw.rotation) it.rotation = num(raw.rotation, 0);
+        if (raw.locked) it.locked = true;
+        if (typeof raw.fill === 'string' && /^#[0-9a-f]{6}$/i.test(raw.fill)) it.fill = raw.fill;
         out.push(it);
       });
       return out;
@@ -1356,6 +1560,11 @@
           if (Array.isArray(parsed.aisle)) layouts.aisle = sanitizeItems(parsed.aisle, DEFAULT_AISLE_ITEMS);
           if (Array.isArray(parsed.arch)) layouts.arch = sanitizeItems(parsed.arch, DEFAULT_ARCH_ITEMS);
           if (parsed.currentMode === 'aisle' || parsed.currentMode === 'arch') currentMode = parsed.currentMode;
+          if ((+parsed.rev || 0) < DATA_REV) {          // one-time update of layouts saved by an older version
+            layouts.aisle = applyFixes(layouts.aisle, 'aisle');
+            layouts.arch = applyFixes(layouts.arch, 'arch');
+            saveToStorage();
+          }
         }
       } catch (e) {
         console.warn('Could not load saved layout:', e);
@@ -1364,8 +1573,9 @@
     }
 
     function saveToStorage() {
+      if (viewOnly) return;
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentMode, aisle: layouts.aisle, arch: layouts.arch }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ rev: DATA_REV, currentMode, aisle: layouts.aisle, arch: layouts.arch }));
       } catch (e) {
         console.warn('Storage error:', e);
       }
@@ -1427,6 +1637,7 @@
     }
 
     function switchMode(mode) {
+      setTimeout(applyPrintPage, 0);
       if (currentMode === mode) return;
       currentMode = mode;
       selectedId = null;
@@ -1498,6 +1709,7 @@
       const q = normQuery();
       let cls = 'plan-item style-' + (item.style || 'aisle');
       if (item.id === selectedId) cls += ' selected';
+      if (item.fill) cls += ' has-fill';
       if (q) cls += itemMatches(item, q) ? ' search-match' : ' search-dimmed';
       el.className = cls;
 
@@ -1508,6 +1720,7 @@
       el.style.setProperty('--fs', (item.fontSize || 10) + 'px');
       el.style.zIndex = item.style === 'note' ? 15 : 20 + index;
       el.style.transform = item.rotation ? 'rotate(' + item.rotation + 'deg)' : '';
+      el.style.background = item.fill || '';
 
       const label = el.firstChild;
       label.className = 'item-label' + (item.vertical ? ' vertical-text' : '');
@@ -1520,6 +1733,7 @@
       if (!el) { renderCanvas(); return; }
       syncItemEl(el, item, layouts[currentMode].indexOf(item));
       fitText(el);
+      requestQB();
     }
 
     function setSelectedClass() {
@@ -1551,10 +1765,16 @@
 
     function fitAllText() { elMap.forEach((el) => fitText(el)); }
 
+    function savePrefs() {
+      try { localStorage.setItem(PREFS_KEY, JSON.stringify({ textSizeIdx, paper: printOpts.paper, orient: printOpts.orient })); } catch (e) { /* ignore */ }
+    }
+
     function loadPrefs() {
       try {
         const p = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
         if (Number.isInteger(p.textSizeIdx) && TEXT_SIZES[p.textSizeIdx]) textSizeIdx = p.textSizeIdx;
+        if (PAPERS[p.paper]) printOpts.paper = p.paper;
+        if (p.orient === 'portrait' || p.orient === 'landscape') printOpts.orient = p.orient;
       } catch (e) { /* ignore */ }
     }
 
@@ -1568,7 +1788,7 @@
 
     function cycleTextSize() {
       textSizeIdx = (textSizeIdx + 1) % TEXT_SIZES.length;
-      try { localStorage.setItem(PREFS_KEY, JSON.stringify({ textSizeIdx })); } catch (e) { /* ignore */ }
+      savePrefs();
       applyTextScale(true);
       showToast('Text size: ' + TEXT_SIZES[textSizeIdx][0]);
     }
@@ -1576,10 +1796,13 @@
     // Phones start zoomed in enough to read; larger screens start fitted to the window.
     function initialView() {
       if (window.innerWidth < 600) {
+        // Start zoomed in on the front of the store (entrance, checkout, deli) so the words are readable straight away.
         userZoomed = true;
-        setZoom(0.5, { x: 0, y: 0, cx: 0, cy: 0 });
+        const z = 0.7;
+        setZoom(z, { x: 0, y: 0, cx: 0, cy: 0 });
         const wr = $('workspace');
-        wr.scrollLeft = 0; wr.scrollTop = 0;
+        wr.scrollLeft = Math.max(0, 12 + 395 * z - wr.clientWidth / 2);
+        wr.scrollTop = wr.scrollHeight;
       } else {
         fitCanvasToScreen();
       }
@@ -1707,6 +1930,7 @@
     function onItemPointerDown(e, id) {
       lastPointerType = e.pointerType;
       if (!e.isPrimary) return;
+      if (viewOnly) return;
       if (e.target.isContentEditable) return;
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       e.stopPropagation();
@@ -1773,6 +1997,7 @@
         if (Math.abs(dx * zoomLevel) <= interaction.slop && Math.abs(dy * zoomLevel) <= interaction.slop) return;
         pushHistory();
         interaction.moved = true;
+        positionQuickbar();                         // hides the bar while dragging
       }
 
       const el = elMap.get(item.id);
@@ -1835,6 +2060,7 @@
           openEditSheet();
         }
         interaction = { type: null };
+        requestQB();
       }
     }
 
@@ -1877,6 +2103,7 @@
         }
         if (item) refreshItem(item);
         updateInspector();
+        requestQB();
       };
       const onKey = (e) => {
         if (e.key === 'Escape') { e.preventDefault(); labelDiv.blur(); }
@@ -1890,10 +2117,12 @@
     // SELECTION, INSPECTOR & SHEETS
     // =========================================================================
     function selectItem(id, openSheetOnMobile) {
+      if (viewOnly) id = null;
       selectedId = id;
       setSelectedClass();
       updateInspector();
-      if (openSheetOnMobile && isMobileViewport()) openEditSheet();
+      requestQB();
+      if (id && openSheetOnMobile && isMobileViewport()) openEditSheet();
     }
 
     function deselectAll() {
@@ -1901,6 +2130,69 @@
       setSelectedClass();
       updateInspector();
       closeAllSheets();
+      requestQB();
+    }
+
+    // ---- Quick action bar: floats above the selected box ----
+    let qbRaf = 0;
+    function requestQB() {
+      if (qbRaf) return;
+      qbRaf = requestAnimationFrame(() => { qbRaf = 0; positionQuickbar(); });
+    }
+
+    function positionQuickbar() {
+      const qb = $('quickbar');
+      const item = getItem(selectedId);
+      const el = item && elMap.get(item.id);
+      if (!el || viewOnly || tourActive() || (interaction.type && interaction.moved)) { qb.hidden = true; $('qb-colors').hidden = true; return; }
+      const w = $('workspace').getBoundingClientRect();
+      const sheetH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sheet-h')) || 0;
+      const bottom = w.bottom - sheetH;
+      const r = el.getBoundingClientRect();
+      if (r.bottom < w.top + 4 || r.top > bottom - 4 || r.right < w.left + 4 || r.left > w.right - 4) { qb.hidden = true; return; }
+      qb.hidden = false;
+      const bw = qb.offsetWidth, bh = qb.offsetHeight;
+      let top = r.top - bh - 12, below = false;
+      if (top < w.top + 6) {
+        below = true;
+        top = r.bottom + 26;                       // leaves room for the resize handle
+        if (top + bh > bottom - 4) top = Math.max(w.top + 6, bottom - bh - 6);
+      }
+      const left = clamp(r.left + r.width / 2 - bw / 2, w.left + 6, Math.max(w.left + 6, w.right - bw - 6));
+      qb.style.left = left + 'px';
+      qb.style.top = top + 'px';
+      qb.classList.toggle('below', below);
+      $('qb-delete').classList.toggle('is-locked', !!item.locked);
+    }
+
+    function qbRename() {
+      const el = elMap.get(selectedId);
+      if (!el) return;
+      $('qb-colors').hidden = true;
+      if (isMobileViewport()) {
+        openEditSheet();
+        setTimeout(() => { const t = $('prop-text'); if (t) { t.focus(); t.select(); } }, 260);
+      } else {
+        enableInlineEdit(selectedId, el.firstChild);
+      }
+    }
+
+    function qbToggleColors() {
+      const c = $('qb-colors');
+      const item = getItem(selectedId);
+      c.hidden = !c.hidden;
+      if (!c.hidden && item) c.querySelectorAll('.sw').forEach((b) => b.classList.toggle('on', (b.dataset.fill || '') === (item.fill || '')));
+    }
+
+    function setSelectedFill(hex) {
+      const item = getItem(selectedId);
+      if (!item) return;
+      pushHistory();
+      if (hex) item.fill = hex; else delete item.fill;
+      saveToStorage();
+      refreshItem(item);
+      syncFormValues();
+      $('qb-colors').hidden = true;
     }
 
     function updateInspector() {
@@ -1937,6 +2229,8 @@
       set('prop-x', Math.round(item.x * 10) / 10);
       set('prop-y', Math.round(item.y * 10) / 10);
       $('prop-vertical').textContent = item.vertical ? 'Vertical' : 'Horizontal';
+      inspectorForm.querySelectorAll('#prop-swatches .sw').forEach((b) => b.classList.toggle('on', (b.dataset.fill || '') === (item.fill || '')));
+      $('prop-delete').setAttribute('aria-disabled', item.locked ? 'true' : 'false');
       $('prop-rot-val').textContent = item.rotation || 0;
     }
 
@@ -1961,6 +2255,7 @@
       SHEET_IDS.forEach((s) => setSheet(s, false));
       $('scrim').classList.remove('show');
       updateSheetMetrics();
+      requestQB();
     }
 
     function updateSheetMetrics() {
@@ -1968,6 +2263,7 @@
       const h = el.classList.contains('open') ? el.offsetHeight : 0;
       document.documentElement.style.setProperty('--sheet-h', h + 'px');
       document.body.classList.toggle('edit-sheet-open', h > 0);
+      requestQB();
     }
 
     function openEditSheet() {
@@ -2128,6 +2424,7 @@
       else if (presetType === 'angled') Object.assign(item, { w: 65, h: 45, text: 'DISPLAY\nTABLE', style: 'shaded', fontSize: 8, rotation: -45 });
       else if (presetType === 'badge') Object.assign(item, { w: 24, h: 22, text: '16', style: 'badge', fontSize: 10 });
       else if (presetType === 'note') Object.assign(item, { w: 180, h: 50, text: 'NEW NOTE / SECTION', style: 'note', fontSize: 10 });
+      else if (presetType === 'landmark') Object.assign(item, { w: 140, h: 30, text: 'RESTROOMS', style: 'landmark', fontSize: 11 });
 
       item.x = clamp(Math.round((vx - item.w / 2) / GRID) * GRID, 0, CANVAS_W - item.w);
       item.y = clamp(Math.round((vy - item.h / 2) / GRID) * GRID, 0, CANVAS_H - item.h);
@@ -2141,10 +2438,11 @@
 
     function duplicateSelected() {
       const item = getItem(selectedId);
-      if (!item) return;
+      if (!item || viewOnly) return;
       pushHistory();
       const copy = clone(item);
       copy.id = newId();
+      delete copy.locked;
       copy.x = Math.min(CANVAS_W - item.w, item.x + 20);
       copy.y = Math.min(CANVAS_H - item.h, item.y + 20);
       layouts[currentMode].push(copy);
@@ -2155,7 +2453,9 @@
     }
 
     function deleteSelected() {
-      if (!selectedId) return;
+      if (!selectedId || viewOnly) return;
+      const cur = getItem(selectedId);
+      if (cur && cur.locked) { showToast("Landmarks can't be deleted. You can still move or rename them."); return; }
       pushHistory();
       layouts[currentMode] = layouts[currentMode].filter((i) => i.id !== selectedId);
       selectedId = null;
@@ -2200,6 +2500,7 @@
       const r2 = canvas.getBoundingClientRect();
       wr.scrollLeft += r2.left + cx * z - anchor.x;
       wr.scrollTop += r2.top + cy * z - anchor.y;
+      requestQB();
     }
 
     function zoomBy(factor) { userZoomed = true; setZoom(zoomLevel * factor); }
@@ -2288,8 +2589,8 @@
           const parsed = JSON.parse(e.target.result);
           if (!Array.isArray(parsed.aisle) && !Array.isArray(parsed.arch)) { showToast('Invalid layout file'); return; }
           const prev = { aisle: layouts.aisle, arch: layouts.arch };
-          if (Array.isArray(parsed.aisle)) { undoStacks.aisle.undo.push(JSON.stringify(prev.aisle)); undoStacks.aisle.redo = []; layouts.aisle = sanitizeItems(parsed.aisle, DEFAULT_AISLE_ITEMS); }
-          if (Array.isArray(parsed.arch)) { undoStacks.arch.undo.push(JSON.stringify(prev.arch)); undoStacks.arch.redo = []; layouts.arch = sanitizeItems(parsed.arch, DEFAULT_ARCH_ITEMS); }
+          if (Array.isArray(parsed.aisle)) { undoStacks.aisle.undo.push(JSON.stringify(prev.aisle)); undoStacks.aisle.redo = []; layouts.aisle = applyFixes(sanitizeItems(parsed.aisle, DEFAULT_AISLE_ITEMS), 'aisle'); }
+          if (Array.isArray(parsed.arch)) { undoStacks.arch.undo.push(JSON.stringify(prev.arch)); undoStacks.arch.redo = []; layouts.arch = applyFixes(sanitizeItems(parsed.arch, DEFAULT_ARCH_ITEMS), 'arch'); }
           selectedId = null;
           saveToStorage();
           renderCanvas();
@@ -2304,9 +2605,235 @@
       event.target.value = '';
     }
 
-    function printCleanBW() {
+    // =========================================================================
+    // PRINT SETUP (paper size + preview), SHARE LINK, PICTURE EXPORT
+    // =========================================================================
+    const PAPERS = { letter: [8.5, 11], legal: [8.5, 14], tabloid: [11, 17], a4: [8.27, 11.69] };
+    const PRINT_MARGIN = 0.3, PRINT_HEAD = 0.32;      // inches
+    const printOpts = { paper: 'letter', orient: 'landscape' };
+
+    function printDims() {
+      let [w, h] = PAPERS[printOpts.paper];
+      if (printOpts.orient === 'landscape') [w, h] = [h, w];
+      return { w, h };
+    }
+    function printZoom() {
+      const { w, h } = printDims();
+      return Math.min((w - 2 * PRINT_MARGIN) * 96 / CANVAS_W, (h - 2 * PRINT_MARGIN - PRINT_HEAD) * 96 / CANVAS_H);
+    }
+    function applyPrintPage() {
+      let st = $('print-page-style');
+      if (!st) { st = document.createElement('style'); st.id = 'print-page-style'; document.head.appendChild(st); }
+      const { w, h } = printDims();
+      st.textContent = '@page { size: ' + w + 'in ' + h + 'in; margin: ' + PRINT_MARGIN + 'in; }';
+      document.documentElement.style.setProperty('--pz', printZoom().toFixed(4));
+      $('print-title').textContent = 'Harvest Market • Springfield, IL — ' + VIEW_NAMES[currentMode];
+    }
+
+    // A clean copy of the map (no selection, search highlights or handles) for the preview and the picture.
+    function cloneCanvasForExport() {
+      const c = $('floor-canvas').cloneNode(true);
+      c.classList.remove('canvas-grid');
+      c.querySelectorAll('[id^="item-"]').forEach((n) => n.removeAttribute('id'));
+      c.querySelectorAll('.plan-item').forEach((n) => n.classList.remove('selected', 'search-match', 'search-dimmed', 'pulse'));
+      c.querySelectorAll('.resize-handle, .canvas-watermark img').forEach((n) => n.remove());
+      c.style.width = CANVAS_W + 'px';
+      c.style.height = CANVAS_H + 'px';
+      return c;
+    }
+
+    function openPrintSetup() {
       deselectAll();
-      setTimeout(() => window.print(), 80);
+      closeShare();
+      $('pv-paper').value = printOpts.paper;
+      $('pv-orient').value = printOpts.orient;
+      applyPrintPage();
+      $('print-modal').hidden = false;
+      renderPrintPreview();
+    }
+    function closePrintSetup() { $('print-modal').hidden = true; $('print-preview').textContent = ''; }
+    function onPrintOpt() {
+      printOpts.paper = $('pv-paper').value;
+      printOpts.orient = $('pv-orient').value;
+      savePrefs();
+      applyPrintPage();
+      renderPrintPreview();
+    }
+    function doPrint() {
+      applyPrintPage();
+      closePrintSetup();
+      setTimeout(() => window.print(), 150);
+    }
+    function printCleanBW() { openPrintSetup(); }
+
+    function renderPrintPreview() {
+      const { w, h } = printDims();
+      const box = $('print-preview');
+      box.textContent = '';
+      const wrapW = Math.max(200, $('print-preview-wrap').clientWidth - 28);
+      const pw = Math.min(wrapW, 520, 320 * w / h);
+      const ph = pw * h / w;
+      box.style.width = pw + 'px';
+      box.style.height = ph + 'px';
+      const ppi = pw / w;                                   // preview pixels per inch
+      const k = printZoom() / 96 * ppi;                     // scale of the 1400px-wide map
+      const mx = (pw - CANVAS_W * k) / 2;
+      const head = document.createElement('div');
+      head.className = 'pv-head';
+      head.style.left = mx + 'px';
+      head.style.top = PRINT_MARGIN * ppi + 'px';
+      head.style.width = CANVAS_W * k + 'px';
+      head.style.fontSize = Math.max(5, 13 / 96 * ppi) + 'px';
+      head.innerHTML = '<span></span><span></span>';
+      head.firstChild.textContent = $('print-title').textContent;
+      const map = document.createElement('div');
+      map.className = 'pv-map';
+      map.style.left = mx + 'px';
+      map.style.top = (PRINT_MARGIN + PRINT_HEAD) * ppi + 'px';
+      map.style.transform = 'scale(' + k + ')';
+      map.appendChild(cloneCanvasForExport());
+      box.append(head, map);
+    }
+
+    // ---- Share dialog ----
+    function openShare() { $('share-link-out').hidden = true; $('share-modal').hidden = false; }
+    function closeShare() { $('share-modal').hidden = true; }
+
+    const b64u = {
+      enc(bytes) { let t = ''; bytes.forEach((b) => { t += String.fromCharCode(b); }); return btoa(t).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
+      dec(str) {
+        str = str.replace(/-/g, '+').replace(/_/g, '/');
+        while (str.length % 4) str += '=';
+        const bin = atob(str); const a = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
+        return a;
+      }
+    };
+    async function pipeBytes(bytes, stream) {
+      const w = stream.writable.getWriter();
+      w.write(bytes); w.close();
+      return new Uint8Array(await new Response(stream.readable).arrayBuffer());
+    }
+
+    async function buildShareURL() {
+      const json = JSON.stringify({ v: 1, aisle: layouts.aisle, arch: layouts.arch });
+      let data = new TextEncoder().encode(json), tag = 'r';
+      if (window.CompressionStream) {
+        try { data = await pipeBytes(data, new CompressionStream('gzip')); tag = 'g'; } catch (e) { tag = 'r'; data = new TextEncoder().encode(json); }
+      }
+      return location.href.split('#')[0] + '#share=' + tag + '.' + b64u.enc(data);
+    }
+
+    async function readShareHash() {
+      const m = /^#share=([gr])\.([A-Za-z0-9_-]+)$/.exec(location.hash);
+      if (!m) return null;
+      let bytes = b64u.dec(m[2]);
+      if (m[1] === 'g') bytes = await pipeBytes(bytes, new DecompressionStream('gzip'));
+      const parsed = JSON.parse(new TextDecoder().decode(bytes));
+      if (!Array.isArray(parsed.aisle) && !Array.isArray(parsed.arch)) throw new Error('empty');
+      return parsed;
+    }
+
+    async function copyText(text) {
+      try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* fall through */ }
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        const ok = document.execCommand('copy');
+        ta.remove();
+        return ok;
+      } catch (e) { return false; }
+    }
+
+    async function copyShareLink() {
+      if (location.protocol === 'file:') { showToast('Links only work once the app is on your website. Upload it first.', { duration: 4000 }); return; }
+      try {
+        const url = await buildShareURL();
+        $('share-link').value = url;
+        $('share-link-out').hidden = false;
+        const ok = await copyText(url);
+        showToast(ok ? 'Link copied. Paste it into a text or email.' : 'Tap the link below and copy it.', { duration: 3000 });
+        if (isMobileViewport() && navigator.share) {
+          try { await navigator.share({ title: 'Harvest Market store map', url }); } catch (e) { /* cancelled */ }
+        }
+      } catch (e) {
+        showToast('Could not make the link');
+      }
+    }
+    async function copyShareLinkText() {
+      const ok = await copyText($('share-link').value);
+      showToast(ok ? 'Link copied' : 'Press and hold the link to copy it');
+    }
+
+    // ---- Open a shared link (read-only) ----
+    async function maybeLoadShared() {
+      if (!location.hash.startsWith('#share=')) return;
+      document.body.classList.add('viewonly');
+      try {
+        const parsed = await readShareHash();
+        sharedLocalBackup = { aisle: layouts.aisle, arch: layouts.arch };
+        viewOnly = true;
+        layouts.aisle = sanitizeItems(parsed.aisle, DEFAULT_AISLE_ITEMS);
+        layouts.arch = sanitizeItems(parsed.arch, DEFAULT_ARCH_ITEMS);
+        selectedId = null;
+        $('viewonly-bar').hidden = false;
+        updateTabUI();
+        renderCanvas();
+        updateInspector();
+        initialView();
+      } catch (e) {
+        document.body.classList.remove('viewonly');
+        showToast("That share link looks incomplete. Ask for a new one.", { duration: 4000 });
+      }
+    }
+
+    function adoptSharedLayout() {
+      if (!window.confirm('Make this your own editable copy? It replaces the map saved on this device.')) return;
+      viewOnly = false;
+      document.body.classList.remove('viewonly');
+      $('viewonly-bar').hidden = true;
+      try { history.replaceState(null, '', location.href.split('#')[0]); } catch (e) { /* ignore */ }
+      saveToStorage();
+      showToast('Saved. You can edit this copy now.');
+    }
+
+    // ---- Save the current map as a PNG ----
+    async function savePicture() {
+      try {
+        deselectAll();
+        const clone = cloneCanvasForExport();
+        let css = '';
+        for (const sh of document.styleSheets) { try { for (const r of sh.cssRules) css += r.cssText + '\n'; } catch (e) { /* cross-origin font sheet */ } }
+        const xml = new XMLSerializer().serializeToString(clone);
+        const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + CANVAS_W + '" height="' + CANVAS_H + '"><foreignObject x="0" y="0" width="100%" height="100%">' +
+          '<div xmlns="http://www.w3.org/1999/xhtml" style="width:' + CANVAS_W + 'px;height:' + CANVAS_H + 'px;background:#fff;font-family:Inter,Arial,Helvetica,sans-serif"><style><![CDATA[' + css + ']]></style>' + xml + '</div></foreignObject></svg>';
+        const img = new Image();
+        await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); });
+        const sc = 2;
+        const cv = document.createElement('canvas');
+        cv.width = CANVAS_W * sc; cv.height = CANVAS_H * sc;
+        const ctx = cv.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+        ctx.drawImage(img, 0, 0, cv.width, cv.height);
+        const blob = await new Promise((r) => cv.toBlob(r, 'image/png'));
+        if (!blob) throw new Error('no blob');
+        const name = 'store-map-' + (currentMode === 'aisle' ? 'aisles' : 'blueprint') + '-' + new Date().toISOString().slice(0, 10) + '.png';
+        const file = new File([blob], name, { type: 'image/png' });
+        if (isMobileViewport() && navigator.canShare && navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file], title: 'Harvest Market store map' }); closeShare(); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+        }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        closeShare();
+        showToast('Saved the picture');
+      } catch (e) {
+        console.warn(e);
+        showToast('Could not make a picture here. Try Print / PDF instead.', { duration: 4000 });
+      }
     }
 
     // =========================================================================
@@ -2341,10 +2868,10 @@
         { title: 'Aisle Map or Blueprint', text: 'Aisle Map shows every aisle and display. Blueprint shows the building: coolers, prep rooms and checkout.', target: () => q('.appbar .seg') },
         { title: 'Find anything fast', text: 'Type an aisle or product, then ' + (m ? 'tap' : 'click') + ' a result. The map zooms right to it and flashes it.', target: () => q('#search-wrap') },
         { title: 'Move around the map', text: m ? 'Drag to scroll. Pinch with two fingers, or use the + and − buttons, to zoom. Double-tap empty space to zoom in.' : 'Scroll to move around. Use the + and − buttons, or Ctrl + scroll, to zoom.', target: () => q('#workspace') },
-        { title: (m ? 'Tap' : 'Click') + ' a box to edit it', text: 'Rename it, change its style, rotate it or resize it. After you select a box, drag it to move it.', target: pickItem },
+        { title: (m ? 'Tap' : 'Click') + ' a box to edit it', text: 'A small bar pops up above it: Rename, Color, Rotate, Copy and Delete. Drag the corner square to resize. Drag the box to move it.', target: pickItem },
         { title: 'Edit or Move', text: 'Edit is the safe mode: select a box first, then drag it. Move lets you drag any box straight away.', target: () => { const b = q('[data-mode-btn="edit"]'); return b && b.parentElement; } },
         { title: 'Add new boxes', text: 'Add an aisle, endcap, display table, aisle number or note.', target: () => (m ? q('#mobile-bottom-bar .btn-solid') : q('#main-toolbar .tool-group')) },
-        { title: 'Print, save and help', text: m ? 'Print in black & white with the green button. The ⋯ menu has backups, text size, this tutorial and more.' : 'Print in black & white, save a backup, load a layout, or open help and this tutorial again.', target: () => q('.appbar-actions') }
+        { title: 'Share, print and help', text: m ? 'The green button prints or makes a PDF, with a preview. In the ⋯ menu, Share & export gives you a view-only link for coworkers.' : 'Share a view-only link with coworkers, print or make a PDF with a preview, or open help and this tutorial again.', target: () => q('.appbar-actions') }
       ];
     }
 
@@ -2461,6 +2988,7 @@
       window.addEventListener('pointerup', onPointerUp);
       window.addEventListener('pointercancel', onPointerUp);
       wr.addEventListener('pointerdown', onWorkspacePointerDown);
+      wr.addEventListener('scroll', requestQB, { passive: true });
 
       // Close the search results when tapping elsewhere
       document.addEventListener('pointerdown', (e) => {
@@ -2512,12 +3040,13 @@
         if (!isMobileViewport()) closeAllSheets();
         updateInspector();
         positionTour();
+        requestQB();
       });
       window.addEventListener('load', () => { if (!userZoomed) fitCanvasToScreen(); });
 
       // ---- Printing from the browser menu / Ctrl+P too ----
       window.addEventListener('beforeprint', () => {
-        selectedId = null; setSelectedClass(); closeAllSheets();
+        selectedId = null; setSelectedClass(); closeAllSheets(); applyPrintPage();
         $('print-date').textContent = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
       });
 
@@ -2534,6 +3063,8 @@
 
         if (e.key === 'Escape') {
           if (!$('help-modal').hidden) { closeHelp(); return; }
+          if (!$('share-modal').hidden) { closeShare(); return; }
+          if (!$('print-modal').hidden) { closePrintSetup(); return; }
           if (!$('confirm-modal').hidden) { closeConfirmModal(); return; }
           if (!$('info-drawer').hidden) { toggleInfo(); return; }
           if (!typing) { $('search-results-popover').hidden = true; deselectAll(); }
