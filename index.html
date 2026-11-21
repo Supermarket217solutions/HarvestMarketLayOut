@@ -474,6 +474,33 @@
 
     @media (max-width: 1023.98px) { body.edit-sheet-open #zoom-ctl { display: none; } }
 
+    /* =====================================================================
+       FIRST-RUN TUTORIAL
+       ===================================================================== */
+    #tour { position: fixed; inset: 0; z-index: 90; }
+    .tour-spot {
+      position: fixed; border-radius: 14px; pointer-events: none;
+      box-shadow: 0 0 0 9999px rgba(15, 23, 42, .78);
+      outline: 3px solid #fbbf24; outline-offset: 2px;
+      transition: left .25s ease, top .25s ease, width .25s ease, height .25s ease;
+    }
+    .tour-spot.none { outline: none; }
+    .tour-card {
+      position: fixed; width: min(360px, calc(100vw - 24px)); padding: 16px 16px 12px;
+      background: #fff; border-radius: 18px; box-shadow: 0 24px 60px rgba(2, 6, 23, .55);
+    }
+    .tour-step { font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--brand-d); }
+    .tour-card h3 { margin: 4px 0 6px; font-size: 18px; font-weight: 800; line-height: 1.25; }
+    .tour-card p { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); }
+    .tour-dots { display: flex; gap: 5px; margin: 12px 0 10px; }
+    .tour-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line-2); }
+    .tour-dots i.on { background: var(--brand-d); width: 18px; border-radius: 4px; }
+    .tour-actions { display: flex; align-items: center; gap: 8px; }
+    .tour-actions .grow { flex: 1; }
+    .tour-actions .btn { min-height: 44px; padding: 0 16px; font-size: 14px; }
+    .tour-skip { min-height: 44px; padding: 0 6px !important; font-size: 14px !important; color: var(--muted) !important; }
+
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
     }
@@ -485,7 +512,7 @@
     @page { size: landscape; margin: 0.25in; }
     @media print {
       html, body { background: #fff !important; height: auto !important; width: auto !important; overflow: visible !important; display: block !important; }
-      .appbar, .toolbar, #inspector-panel, #mobile-bottom-bar, .sheet, .scrim, #zoom-ctl, #popover-host,
+      #tour, .appbar, .toolbar, #inspector-panel, #mobile-bottom-bar, .sheet, .scrim, #zoom-ctl, #popover-host,
       #search-results-popover, #toast-container, .modal, #info-drawer, .canvas-watermark, .resize-handle, .no-print { display: none !important; }
       .main, .canvas-region { display: block !important; overflow: visible !important; }
       #workspace { display: block !important; overflow: visible !important; background: #fff !important; padding: 0 !important; }
@@ -803,6 +830,7 @@
     <div class="sheet-body">
       <div class="tiles">
         <button class="tile" onclick="closeAllSheets(); toggleInfo()"><svg class="i"><use href="#i-photo"/></svg><b>Store &amp; legend</b><small>Address, hours, what each box style means</small></button>
+        <button class="tile" onclick="closeAllSheets(); startTour()"><svg class="i"><use href="#i-pointer"/></svg><b>Tutorial</b><small>A quick tour of the buttons</small></button>
         <button class="tile" onclick="closeAllSheets(); openHelp()"><svg class="i"><use href="#i-help"/></svg><b>Help</b><small>How to move, edit and zoom</small></button>
         <button class="tile" onclick="cycleTextSize()"><span style="font:800 18px Inter,sans-serif;line-height:18px">Aa</span><b data-text-label>Text size: Large</b><small>Tap to cycle bigger / smaller words</small></button>
         <button class="tile" onclick="toggleSnap()"><svg class="i"><use href="#i-grid"/></svg><b data-snap-label>Grid snap: ON</b><small>Keeps moved items lined up</small></button>
@@ -861,6 +889,23 @@
 
   <div id="toast-container" aria-live="polite"></div>
 
+  <!-- First-run tutorial -->
+  <div id="tour" class="no-print" hidden role="dialog" aria-modal="true" aria-labelledby="tour-title">
+    <div class="tour-spot" id="tour-spot"></div>
+    <div class="tour-card" id="tour-card">
+      <div class="tour-step" id="tour-step"></div>
+      <h3 id="tour-title"></h3>
+      <p id="tour-text"></p>
+      <div class="tour-dots" id="tour-dots"></div>
+      <div class="tour-actions">
+        <button class="link tour-skip" onclick="endTour()">Skip tour</button>
+        <span class="grow"></span>
+        <button class="btn" id="tour-back" onclick="tourGo(-1)">Back</button>
+        <button class="btn btn-primary" id="tour-next" onclick="tourGo(1)">Next</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Help -->
   <div id="help-modal" class="modal no-print" hidden onclick="closeHelp()">
     <div class="modal-card" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="help-title">
@@ -876,7 +921,10 @@
         <p style="margin:0"><b>Print.</b> <b>Print B&amp;W</b> makes a clean landscape page without the toolbars or grid dots.</p>
         <p style="margin:0"><b>Saving.</b> Changes save automatically on this device. Use <b>Save</b> to download a backup or send your layout to someone, and <b>Load</b> to open one.</p>
       </div>
-      <div class="modal-actions"><button class="btn btn-solid" onclick="closeHelp()">Got it</button></div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeHelp(); startTour()">Replay the tutorial</button>
+        <button class="btn btn-solid" onclick="closeHelp()">Got it</button>
+      </div>
     </div>
   </div>
 
@@ -1253,7 +1301,7 @@
       if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAllText);
       updateInspector();
       if (navigator.share && navigator.canShare) $('btn-share').hidden = false;
-      showHintOnce();
+      if (!tourSeen()) setTimeout(startTour, 900);
     }
 
     function buildInspectorForm() {
@@ -2262,6 +2310,122 @@
     }
 
     // =========================================================================
+    // FIRST-RUN TUTORIAL — spotlight each control, with Skip always available
+    // =========================================================================
+    const TOUR_KEY = 'store_layout_tour_v1';
+    let tourSteps = [];
+    let tourIdx = -1;
+
+    function tourSeen() { try { return !!localStorage.getItem(TOUR_KEY); } catch (e) { return true; } }
+    function tourActive() { return !$('tour').hidden; }
+
+    function buildTourSteps() {
+      const m = isMobileViewport();
+      const visible = (el) => { if (!el) return null; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 ? el : null; };
+      const q = (sel) => { for (const el of document.querySelectorAll(sel)) if (visible(el)) return el; return null; };
+      const pickItem = () => {
+        const w = $('workspace').getBoundingClientRect();
+        let best = null;
+        for (const it of layouts[currentMode]) {
+          if (it.style === 'note' || it.style === 'badge') continue;
+          const el = elMap.get(it.id);
+          if (!el) continue;
+          const r = el.getBoundingClientRect();
+          const inside = r.left >= w.left + 6 && r.right <= w.right - 6 && r.top >= w.top + 6 && r.bottom <= w.bottom - 6;
+          if (inside && r.width >= 50 && r.height >= 20 && !it.rotation) { best = el; break; }
+        }
+        return best;
+      };
+      return [
+        { title: 'Welcome to the store map', text: 'Take a quick tour of the main buttons. It only takes a few seconds, and you can skip any time.', target: null, next: 'Start tour' },
+        { title: 'Aisle Map or Blueprint', text: 'Aisle Map shows every aisle and display. Blueprint shows the building: coolers, prep rooms and checkout.', target: () => q('.appbar .seg') },
+        { title: 'Find anything fast', text: 'Type an aisle or product, then ' + (m ? 'tap' : 'click') + ' a result. The map zooms right to it and flashes it.', target: () => q('#search-wrap') },
+        { title: 'Move around the map', text: m ? 'Drag to scroll. Pinch with two fingers, or use the + and − buttons, to zoom. Double-tap empty space to zoom in.' : 'Scroll to move around. Use the + and − buttons, or Ctrl + scroll, to zoom.', target: () => q('#workspace') },
+        { title: (m ? 'Tap' : 'Click') + ' a box to edit it', text: 'Rename it, change its style, rotate it or resize it. After you select a box, drag it to move it.', target: pickItem },
+        { title: 'Edit or Move', text: 'Edit is the safe mode: select a box first, then drag it. Move lets you drag any box straight away.', target: () => { const b = q('[data-mode-btn="edit"]'); return b && b.parentElement; } },
+        { title: 'Add new boxes', text: 'Add an aisle, endcap, display table, aisle number or note.', target: () => (m ? q('#mobile-bottom-bar .btn-solid') : q('#main-toolbar .tool-group')) },
+        { title: 'Print, save and help', text: m ? 'Print in black & white with the green button. The ⋯ menu has backups, text size, this tutorial and more.' : 'Print in black & white, save a backup, load a layout, or open help and this tutorial again.', target: () => q('.appbar-actions') }
+      ];
+    }
+
+    function startTour() {
+      closeAllSheets();
+      selectedId = null; setSelectedClass(); updateInspector();
+      $('search-results-popover').hidden = true;
+      tourSteps = buildTourSteps();
+      tourIdx = -1;
+      $('tour').hidden = false;
+      tourGo(1);
+    }
+
+    function endTour() {
+      $('tour').hidden = true;
+      tourIdx = -1;
+      try { localStorage.setItem(TOUR_KEY, '1'); } catch (e) { /* ignore */ }
+    }
+
+    function tourGo(dir) {
+      let i = tourIdx + dir;
+      while (i >= 0 && i < tourSteps.length) {
+        const st = tourSteps[i];
+        if (!st.target || (typeof st.target === 'function' ? st.target() : st.target)) break;
+        i += dir;                                  // skip steps whose control isn't on screen
+      }
+      if (i >= tourSteps.length) { endTour(); return; }
+      if (i < 0) i = 0;
+      tourIdx = i;
+      renderTourStep();
+    }
+
+    function renderTourStep() {
+      const st = tourSteps[tourIdx];
+      const last = tourIdx === tourSteps.length - 1;
+      $('tour-step').textContent = tourIdx === 0 ? 'Quick tour' : 'Step ' + tourIdx + ' of ' + (tourSteps.length - 1);
+      $('tour-title').textContent = st.title;
+      $('tour-text').textContent = st.text;
+      $('tour-dots').innerHTML = tourSteps.map((_, k) => '<i class="' + (k === tourIdx ? 'on' : '') + '"></i>').join('');
+      $('tour-back').hidden = tourIdx === 0;
+      $('tour-next').textContent = last ? 'Done' : (st.next || 'Next');
+      positionTour();
+    }
+
+    function positionTour() {
+      if (tourIdx < 0) return;
+      const st = tourSteps[tourIdx];
+      const spot = $('tour-spot'), card = $('tour-card');
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const el = st.target ? (typeof st.target === 'function' ? st.target() : st.target) : null;
+
+      let t = null;
+      if (el) {
+        const r = el.getBoundingClientRect();
+        const pad = 6;
+        t = { left: Math.max(4, r.left - pad), top: Math.max(4, r.top - pad), right: Math.min(vw - 4, r.right + pad), bottom: Math.min(vh - 4, r.bottom + pad) };
+      }
+      spot.classList.toggle('none', !t);
+      if (t) {
+        spot.style.left = t.left + 'px'; spot.style.top = t.top + 'px';
+        spot.style.width = (t.right - t.left) + 'px'; spot.style.height = (t.bottom - t.top) + 'px';
+      } else {
+        spot.style.left = vw / 2 + 'px'; spot.style.top = vh / 2 + 'px'; spot.style.width = '0px'; spot.style.height = '0px';
+      }
+
+      const cw = card.offsetWidth, ch = card.offsetHeight, gap = 14;
+      let top, left;
+      if (!t) {
+        top = (vh - ch) / 2; left = (vw - cw) / 2;
+      } else {
+        const below = vh - t.bottom, above = t.top;
+        if (below >= ch + gap + 8) top = t.bottom + gap;
+        else if (above >= ch + gap + 8) top = t.top - ch - gap;
+        else top = below >= above ? vh - ch - 16 : 16;     // big target (the map): park the card at the bottom
+        left = (t.left + t.right) / 2 - cw / 2;
+      }
+      card.style.top = clamp(top, 12, Math.max(12, vh - ch - 12)) + 'px';
+      card.style.left = clamp(left, 12, Math.max(12, vw - cw - 12)) + 'px';
+    }
+
+    // =========================================================================
     // MODALS, DRAWER, TOAST
     // =========================================================================
     function toggleInfo() { const d = $('info-drawer'); d.hidden = !d.hidden; }
@@ -2285,14 +2449,6 @@
       c.appendChild(t);
       while (c.children.length > 3) c.firstChild.remove();
       setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, opts.duration || 2000);
-    }
-
-    function showHintOnce() {
-      try {
-        if (!window.matchMedia('(pointer: coarse)').matches || localStorage.getItem(HINT_KEY)) return;
-        localStorage.setItem(HINT_KEY, '1');
-        setTimeout(() => showToast('Pinch or double-tap to zoom • tap an item to edit', { duration: 4200 }), 600);
-      } catch (e) { /* ignore */ }
     }
 
     // =========================================================================
@@ -2355,6 +2511,7 @@
       window.addEventListener('resize', () => {
         if (!isMobileViewport()) closeAllSheets();
         updateInspector();
+        positionTour();
       });
       window.addEventListener('load', () => { if (!userZoomed) fitCanvasToScreen(); });
 
@@ -2366,6 +2523,12 @@
 
       // ---- Keyboard ----
       window.addEventListener('keydown', (e) => {
+        if (tourActive()) {
+          if (e.key === 'Escape') { e.preventDefault(); endTour(); }
+          else if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); tourGo(1); }
+          else if (e.key === 'ArrowLeft') { e.preventDefault(); tourGo(-1); }
+          return;
+        }
         const t = e.target;
         const typing = t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable;
 
