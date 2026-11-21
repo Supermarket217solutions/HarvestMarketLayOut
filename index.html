@@ -1794,18 +1794,15 @@
     }
 
     // Phones start zoomed in enough to read; larger screens start fitted to the window.
+    // Phones are detected by their real screen too, so a late-reporting browser width can't send them to the tiny fit-all view.
+    function isPhone() {
+      const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+      return window.innerWidth < 600 || (coarse && Math.min(screen.width, screen.height) < 600);
+    }
+
+    // Everyone starts by seeing the whole store; zooming in is up to them.
     function initialView() {
-      if (window.innerWidth < 600) {
-        // Start zoomed in on the front of the store (entrance, checkout, deli) so the words are readable straight away.
-        userZoomed = true;
-        const z = 0.7;
-        setZoom(z, { x: 0, y: 0, cx: 0, cy: 0 });
-        const wr = $('workspace');
-        wr.scrollLeft = Math.max(0, 12 + 395 * z - wr.clientWidth / 2);
-        wr.scrollTop = wr.scrollHeight;
-      } else {
-        fitCanvasToScreen();
-      }
+      fitCanvasToScreen();
     }
 
     // =========================================================================
@@ -2505,13 +2502,13 @@
 
     function zoomBy(factor) { userZoomed = true; setZoom(zoomLevel * factor); }
 
-    function fitCanvasToScreen() {
+    function fitCanvasToScreen(explicit) {
       const wr = $('workspace');
       const cs = getComputedStyle($('canvas-pad'));
       const availW = wr.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
       const availH = wr.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
       const z = clamp(Math.min(availW / CANVAS_W, availH / CANVAS_H), ZMIN, 1.2);
-      userZoomed = false;
+      userZoomed = explicit === true;      // the Fit button keeps the whole-map view; automatic fits stay automatic
       setZoom(+z.toFixed(3));
       wr.scrollLeft = 0;
       wr.scrollTop = 0;
@@ -2867,7 +2864,8 @@
         { title: 'Welcome to the store map', text: 'Take a quick tour of the main buttons. It only takes a few seconds, and you can skip any time.', target: null, next: 'Start tour' },
         { title: 'Aisle Map or Blueprint', text: 'Aisle Map shows every aisle and display. Blueprint shows the building: coolers, prep rooms and checkout.', target: () => q('.appbar .seg') },
         { title: 'Find anything fast', text: 'Type an aisle or product, then ' + (m ? 'tap' : 'click') + ' a result. The map zooms right to it and flashes it.', target: () => q('#search-wrap') },
-        { title: 'Move around the map', text: m ? 'Drag to scroll. Pinch with two fingers, or use the + and − buttons, to zoom. Double-tap empty space to zoom in.' : 'Scroll to move around. Use the + and − buttons, or Ctrl + scroll, to zoom.', target: () => q('#workspace') },
+        { title: 'Move around the map', text: m ? 'Drag with one finger to slide the map around.' : 'Scroll to move around the map.', target: () => q('#workspace') },
+        { title: 'Zoom in and out', text: m ? 'Tap + to zoom in and − to zoom out. The corner-arrows button shows the whole store again. You can also pinch with two fingers, or double-tap empty space.' : 'Click + to zoom in and − to zoom out. The corner-arrows button fits the whole store on screen. Ctrl + scroll works too.', target: () => q('#zoom-ctl') },
         { title: (m ? 'Tap' : 'Click') + ' a box to edit it', text: 'A small bar pops up above it: Rename, Color, Rotate, Copy and Delete. Drag the corner square to resize. Drag the box to move it.', target: pickItem },
         { title: 'Edit or Move', text: 'Edit is the safe mode: select a box first, then drag it. Move lets you drag any box straight away.', target: () => { const b = q('[data-mode-btn="edit"]'); return b && b.parentElement; } },
         { title: 'Add new boxes', text: 'Add an aisle, endcap, display table, aisle number or note.', target: () => (m ? q('#mobile-bottom-bar .btn-solid') : q('#main-toolbar .tool-group')) },
@@ -3034,7 +3032,7 @@
         const heightChanged = Math.abs(h - lastH) > 2;
         lastW = w; lastH = h;
         // On phones the on-screen keyboard changes the height only; don't re-fit for that.
-        if (!userZoomed && (widthChanged || (heightChanged && !isMobileViewport()))) fitCanvasToScreen();
+        if (!userZoomed && (widthChanged || (heightChanged && !isMobileViewport()))) initialView();
       }).observe(wr);
       window.addEventListener('resize', () => {
         if (!isMobileViewport()) closeAllSheets();
@@ -3042,7 +3040,7 @@
         positionTour();
         requestQB();
       });
-      window.addEventListener('load', () => { if (!userZoomed) fitCanvasToScreen(); });
+      window.addEventListener('load', () => { if (!userZoomed) initialView(); });
 
       // ---- Printing from the browser menu / Ctrl+P too ----
       window.addEventListener('beforeprint', () => {
