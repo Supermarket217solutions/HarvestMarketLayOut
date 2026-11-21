@@ -1,0 +1,2402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="theme-color" content="#0f172a">
+  <title>Store Floor Plan &amp; Aisle Directory Editor</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f172a'/%3E%3Cpath d='M7 9h18v14H7zM7 15h18M14 9v14' stroke='%2310b981' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    /* =====================================================================
+       DESIGN TOKENS
+       ===================================================================== */
+    :root {
+      --ink: #0f172a;
+      --ink-2: #334155;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --line-2: #cbd5e1;
+      --bg: #e6eaf0;
+      --panel: #ffffff;
+      --dark: #0f172a;
+      --dark-2: #1e293b;
+      --dark-3: #334155;
+      --brand: #10b981;
+      --brand-d: #059669;
+      --brand-ink: #022c22;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --danger: #e11d48;
+      --amber: #f59e0b;
+      --radius: 10px;
+      --bar-h: 0px;          /* bottom action bar height (phones/tablets) */
+      --sheet-h: 0px;        /* height of the open edit sheet */
+    }
+    @media (max-width: 1023.98px) {
+      :root { --bar-h: calc(64px + env(safe-area-inset-bottom, 0px)); }
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    [hidden] { display: none !important; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.4;
+      color: var(--ink);
+      background: var(--bg);
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      overscroll-behavior: none;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .i-sm { width: 15px; height: 15px; }
+
+    /* Responsive helpers */
+    @media (max-width: 1023.98px) { .only-desktop { display: none !important; } }
+    @media (min-width: 1024px) { .only-mobile { display: none !important; } }
+    @media (max-width: 559.98px) { .hide-xs { display: none !important; } }
+
+    /* =====================================================================
+       BUTTONS & CONTROLS
+       ===================================================================== */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      min-height: 38px; padding: 0 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line-2);
+      background: #fff; color: var(--ink-2);
+      font-size: 12.5px; font-weight: 600; line-height: 1; white-space: nowrap;
+      transition: background .12s, transform .08s, border-color .12s;
+      user-select: none; -webkit-user-select: none;
+    }
+    .btn:hover { background: #f1f5f9; }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .4; cursor: default; transform: none; background: #fff; }
+    .btn-icon { width: 40px; padding: 0; }
+    .btn-dark { background: var(--dark-2); border-color: var(--dark-3); color: #e2e8f0; }
+    .btn-dark:hover { background: var(--dark-3); }
+    .btn-primary { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); font-weight: 800; }
+    .btn-primary:hover { background: #34d399; }
+    .btn-solid { background: var(--dark-2); border-color: var(--dark-2); color: #fff; }
+    .btn-solid:hover { background: #334155; }
+    .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+    .btn-danger:hover { background: #f43f5e; }
+    .btn-soft-danger { background: #fff1f2; border-color: #fecdd3; color: #be123c; }
+    .btn-soft-danger:hover { background: #ffe4e6; }
+    .btn-soft-blue { background: var(--accent-soft); border-color: #bfdbfe; color: #1d4ed8; }
+    .btn-soft-blue:hover { background: #dbeafe; }
+    .btn-block { width: 100%; }
+    .link { background: none; border: 0; padding: 4px 2px; color: var(--accent); font-size: 12px; font-weight: 700; }
+    .link:hover { text-decoration: underline; }
+
+    @media (pointer: coarse) {
+      .btn { min-height: 44px; }
+      .btn-icon { width: 44px; }
+    }
+
+    /* Segmented control */
+    .seg { display: inline-flex; padding: 2px; gap: 2px; background: #f1f5f9; border: 1px solid var(--line-2); border-radius: 12px; }
+    .seg-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      min-height: 34px; padding: 0 14px; border: 0; border-radius: 10px;
+      background: transparent; color: var(--ink-2); font-size: 12.5px; font-weight: 700; white-space: nowrap;
+      transition: background .12s, color .12s;
+    }
+    .seg-btn:hover { background: rgba(15, 23, 42, .06); }
+    .seg-btn.is-active { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(15, 23, 42, .2); }
+    .seg-btn.is-active[data-mode-btn="edit"] { background: var(--brand-d); color: #fff; }
+    .seg-btn.is-active[data-mode-btn="move"] { background: var(--accent); color: #fff; }
+    .seg.on-dark { background: var(--dark-2); border-color: var(--dark-3); }
+    .seg.on-dark .seg-btn { color: #cbd5e1; }
+    .seg.on-dark .seg-btn:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+    .seg.on-dark .seg-btn.is-active { background: #fff; color: var(--ink); }
+    @media (pointer: coarse) { .seg-btn { min-height: 40px; } }
+
+    /* =====================================================================
+       APP BAR
+       ===================================================================== */
+    .appbar {
+      flex: none; z-index: 30;
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; padding-top: calc(8px + env(safe-area-inset-top, 0px));
+      background: var(--dark); color: #fff;
+      box-shadow: 0 2px 8px rgba(2, 6, 23, .35);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+    .brand-logo {
+      position: relative; width: 36px; height: 36px; flex: none; border-radius: 50%;
+      background: #fff; color: var(--ink); border: 1px solid rgba(16, 185, 129, .5);
+      display: grid; place-items: center; overflow: hidden; font-size: 11px; font-weight: 800;
+    }
+    .brand-logo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #fff; }
+    .brand-text { min-width: 0; }
+    .brand-text h1 { margin: 0; font-size: 15px; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .brand-text p { margin: 1px 0 0; font-size: 11.5px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .appbar-actions { display: flex; align-items: center; gap: 6px; flex: none; }
+    .file-btn input { display: none; }
+
+    @media (max-width: 719.98px) {
+      .brand { flex: none; }
+      .brand-text { display: none; }
+      .appbar { gap: 8px; }
+      .appbar .seg { flex: 1; min-width: 0; }
+      .appbar .seg .seg-btn { flex: 1; padding: 0 8px; }
+    }
+
+    /* =====================================================================
+       TOOLBAR (search, undo/redo; desktop also has mode + add + snap + reset)
+       ===================================================================== */
+    .toolbar {
+      flex: none; z-index: 20;
+      display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+      padding: 8px 12px;
+      background: #fff; border-bottom: 1px solid var(--line);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, .06);
+    }
+    .toolbar-spacer { flex: 1; }
+    .tool-group { display: flex; align-items: center; gap: 6px; }
+    .search-wrap { position: relative; flex: 1; min-width: 0; }
+    @media (min-width: 1024px) { .search-wrap { flex: 0 0 300px; } }
+    .search-field {
+      display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 6px 0 12px;
+      background: #f1f5f9; border: 1px solid var(--line-2); border-radius: 12px; color: var(--muted);
+    }
+    .search-field:focus-within { background: #fff; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, .18); }
+    .search-field input {
+      flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent;
+      font-size: 14px; font-weight: 500; color: var(--ink);
+    }
+    .search-field input::placeholder { color: #94a3b8; }
+    .search-field input::-webkit-search-cancel-button { display: none; }
+    .search-clear { width: 30px; height: 30px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); display: grid; place-items: center; }
+    .search-clear:hover { background: #e2e8f0; color: var(--ink); }
+    .popover {
+      position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 45;
+      max-height: min(55dvh, 360px); overflow-y: auto; padding: 6px;
+      background: #fff; border: 1px solid var(--line-2); border-radius: 14px;
+      box-shadow: 0 16px 40px -8px rgba(15, 23, 42, .3);
+    }
+    @media (min-width: 1024px) { .popover { right: auto; width: 380px; } }
+    .result {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+      min-height: 44px; padding: 8px 10px; border: 0; border-radius: 10px; background: transparent; text-align: left;
+    }
+    .result:hover, .result:focus-visible { background: #fffbeb; }
+    .result:active { background: #fef3c7; }
+    .result-label { font-size: 13px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .result-area { flex: none; font-size: 11px; font-weight: 600; color: var(--muted); background: #f1f5f9; border-radius: 999px; padding: 3px 8px; }
+    .popover-empty { padding: 12px; font-size: 13px; color: var(--muted); }
+    .pill {
+      flex: none; padding: 3px 9px; border-radius: 999px; background: #fef3c7; border: 1px solid #fcd34d;
+      color: #78350f; font-size: 11px; font-weight: 700; white-space: nowrap;
+    }
+
+    /* =====================================================================
+       WORKSPACE
+       ===================================================================== */
+    .main { flex: 1; min-height: 0; display: flex; overflow: hidden; position: relative; }
+    .canvas-region { flex: 1; min-width: 0; position: relative; display: flex; }
+    #workspace {
+      flex: 1; min-width: 0; overflow: auto; display: flex;
+      background: var(--bg);
+      background-image: radial-gradient(rgba(100, 116, 139, .18) 1px, transparent 1px);
+      background-size: 18px 18px;
+      touch-action: pan-x pan-y;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+    #canvas-pad { flex: none; margin: auto; padding: 22px; }
+    @media (max-width: 1023.98px) {
+      #canvas-pad { padding: 12px 12px calc(max(var(--bar-h), var(--sheet-h)) + 14px); }
+    }
+    #canvas-sizer { position: relative; flex: none; }
+    #canvas-scaler { position: absolute; left: 0; top: 0; width: 1400px; height: 980px; transform-origin: 0 0; }
+
+    #floor-canvas {
+      --inv: 1; --ts: 1.3;
+      position: relative; width: 1400px; height: 980px;
+      background-color: #fff; border: 1px solid #94a3b8;
+      box-shadow: 0 10px 30px -10px rgba(15, 23, 42, .35);
+    }
+    #floor-canvas.canvas-grid { background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; }
+    #arch-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .canvas-watermark {
+      position: absolute; top: 12px; right: 16px; z-index: 10; pointer-events: none; user-select: none;
+      display: flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 999px;
+      background: rgba(255, 255, 255, .85); border: 1px solid rgba(148, 163, 184, .6); opacity: .6;
+      font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #475569;
+    }
+    .canvas-watermark img { width: 20px; height: 20px; object-fit: contain; filter: grayscale(1); }
+
+    /* Floating zoom control */
+    #zoom-ctl {
+      position: absolute; right: 14px; bottom: calc(max(var(--bar-h), var(--sheet-h)) + 14px); z-index: 25;
+      display: flex; flex-direction: column; align-items: stretch;
+      background: rgba(255, 255, 255, .96); border: 1px solid var(--line-2); border-radius: 14px;
+      box-shadow: 0 8px 24px -6px rgba(15, 23, 42, .35); overflow: hidden;
+      transition: bottom .25s cubic-bezier(.16, 1, .3, 1);
+    }
+    #zoom-ctl button { width: 44px; height: 42px; border: 0; background: transparent; display: grid; place-items: center; color: var(--ink-2); }
+    #zoom-ctl button:hover { background: #f1f5f9; }
+    #zoom-ctl button:active { background: #e2e8f0; }
+    #zoom-ctl .zoom-label { font: 700 11px 'JetBrains Mono', ui-monospace, monospace; text-align: center; padding: 5px 0; color: var(--ink-2); border-block: 1px solid var(--line); background: #f8fafc; }
+
+    /* =====================================================================
+       FLOOR PLAN ITEMS
+       ===================================================================== */
+    #items-layer { position: static; }
+    .plan-item {
+      position: absolute; display: flex; align-items: center; justify-content: center;
+      text-align: center; line-height: 1.15;
+      font-size: calc(var(--fs, 10px) * var(--ts, 1) * var(--fit, 1));
+      letter-spacing: .015em; text-rendering: optimizeLegibility;
+      user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+      transition: box-shadow .12s ease, opacity .15s ease;
+    }
+    #items-layer[data-mode="edit"] .plan-item { cursor: pointer; }
+    #items-layer[data-mode="move"] .plan-item { cursor: grab; touch-action: none; }
+    #items-layer[data-mode="move"] .plan-item:active { cursor: grabbing; }
+    .plan-item.selected { touch-action: none; cursor: grab; }
+    @media (hover: hover) {
+      .plan-item:hover:not(.selected):not(.search-match) { box-shadow: 0 0 0 calc(2px * var(--inv, 1)) rgba(37, 99, 235, .4); }
+    }
+    .plan-item.selected {
+      outline: calc(3px * var(--inv, 1)) solid #2563eb;
+      outline-offset: calc(2px * var(--inv, 1));
+      z-index: 90 !important;
+      box-shadow: 0 10px 24px -4px rgba(37, 99, 235, .35);
+    }
+    .plan-item.search-match {
+      outline: calc(3px * var(--inv, 1)) solid #f59e0b;
+      outline-offset: calc(3px * var(--inv, 1));
+      z-index: 88 !important;
+      box-shadow: 0 0 0 calc(5px * var(--inv, 1)) rgba(245, 158, 11, .25);
+    }
+    .plan-item.search-dimmed { opacity: .28; }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+      50% { box-shadow: 0 0 0 calc(14px * var(--inv, 1)) rgba(245, 158, 11, .5); }
+    }
+    .plan-item.pulse { animation: pulse .9s ease-in-out 3; }
+
+    /* Block styles — clean high-contrast B&W (also what prints) */
+    .style-aisle  { background: #fff; border: 1.75px solid #000; color: #000; font-weight: 700; }
+    .style-shaded { background: #e5e7eb; border: 1.75px solid #000; color: #000; font-weight: 700; }
+    .style-endcap { background: #f8fafc; border: 1.75px solid #000; color: #000; font-weight: 700; }
+    .style-circle { background: #fff; border: 2px solid #000; border-radius: 9999px; color: #000; font-weight: 700; }
+    .style-note   { background: transparent; border: 1px dashed #94a3b8; color: #000; text-align: left; align-items: flex-start; justify-content: flex-start; padding: 4px 6px; font-weight: 600; }
+    .style-badge  { background: #000; border: 1.5px solid #000; color: #fff; border-radius: 4px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; }
+    .style-room   { background: #fff; border-left: 2px solid #000; border-bottom: 2px solid #000; border-top: none; border-right: none; color: #000; font-weight: 800; }
+
+    /* Heavier, crisper map text */
+    .style-aisle, .style-shaded, .style-endcap, .style-circle { font-weight: 800; }
+    .style-note { font-weight: 700; }
+    .vertical-text { writing-mode: vertical-rl; transform: rotate(180deg); }
+    .item-label.vertical-text { padding: 2px 4px; }
+    .item-label {
+      width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      padding: 1px 2px; word-break: break-word; overflow: hidden; white-space: pre-wrap;
+    }
+    .style-note .item-label { align-items: flex-start; justify-content: flex-start; }
+    .style-badge .item-label { padding: 0; white-space: nowrap; word-break: normal; }
+    .item-label[contenteditable="true"] {
+      user-select: text; -webkit-user-select: text; cursor: text;
+      background: #eff6ff; outline: 2.5px solid #2563eb; border-radius: 2px;
+    }
+
+    .resize-handle {
+      display: none; position: absolute; z-index: 100;
+      right: calc(-12px * var(--inv, 1)); bottom: calc(-12px * var(--inv, 1));
+      width: calc(26px * var(--inv, 1)); height: calc(26px * var(--inv, 1));
+      background: #2563eb; border: calc(3px * var(--inv, 1)) solid #fff; border-radius: calc(7px * var(--inv, 1));
+      cursor: nwse-resize; touch-action: none; box-shadow: 0 2px 6px rgba(0, 0, 0, .35);
+    }
+    @media (pointer: coarse) {
+      .resize-handle { width: calc(34px * var(--inv, 1)); height: calc(34px * var(--inv, 1)); right: calc(-16px * var(--inv, 1)); bottom: calc(-16px * var(--inv, 1)); }
+    }
+    .plan-item.selected .resize-handle { display: block; }
+
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: #dbe1e9; }
+    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 6px; border: 2px solid #dbe1e9; }
+
+    /* =====================================================================
+       INSPECTOR (desktop sidebar + shared form)
+       ===================================================================== */
+    #inspector-panel {
+      width: 320px; flex: none; overflow-y: auto; padding: 16px;
+      background: #fff; border-left: 1px solid var(--line); box-shadow: -4px 0 16px rgba(15, 23, 42, .06); z-index: 20;
+    }
+    @media (max-width: 1023.98px) { #inspector-panel { display: none; } }
+    .empty-state { text-align: center; padding: 28px 8px 8px; }
+    .empty-icon { width: 48px; height: 48px; border-radius: 50%; background: #f1f5f9; color: var(--muted); display: grid; place-items: center; margin: 0 auto 12px; }
+    .empty-state h3 { margin: 0; font-size: 15px; }
+    .empty-state p { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+    .tips { margin-top: 20px; text-align: left; background: #f8fafc; border: 1px solid var(--line); border-radius: 12px; padding: 12px; font-size: 12.5px; color: var(--ink-2); display: grid; gap: 7px; }
+    .tips b.t { display: block; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; color: var(--ink); }
+
+    .form { display: flex; flex-direction: column; gap: 14px; }
+    .fld > label, .fld-head > label { display: block; margin-bottom: 5px; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-2); }
+    .fld-head { display: flex; align-items: center; justify-content: space-between; }
+    .fld-head > label { margin-bottom: 0; }
+    .form textarea, .form input[type="number"], .form select {
+      width: 100%; padding: 9px 12px; border: 1px solid var(--line-2); border-radius: 10px; background: #fff;
+      font-size: 14px; font-weight: 600; color: var(--ink);
+    }
+    .form textarea { resize: vertical; min-height: 64px; }
+    .form textarea:focus, .form input:focus, .form select:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, .18); }
+    @media (pointer: coarse) { .form textarea, .form input[type="number"], .form select { font-size: 16px; } }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { min-height: 34px; padding: 0 12px; background: #f1f5f9; border: 1px solid var(--line-2); border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--ink-2); }
+    .chip:hover { background: #e2e8f0; }
+    .chip:active { background: #cbd5e1; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .grid4 .btn, .grid2 .btn { padding: 0 6px; }
+    .form-actions {
+      position: sticky; bottom: -16px; margin: 0 -16px -16px; padding: 12px 16px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #fff 22%); border-top: 1px solid var(--line);
+    }
+    #edit-sheet-body .form-actions { bottom: 0; margin-bottom: 0; background: #fff; }
+
+    /* =====================================================================
+       BOTTOM BAR + SHEETS (phones & tablets)
+       ===================================================================== */
+    #mobile-bottom-bar {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+      height: var(--bar-h); padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255, 255, 255, .96); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      border-top: 1px solid var(--line-2); box-shadow: 0 -6px 20px rgba(15, 23, 42, .12);
+    }
+    #mobile-bottom-bar .seg { flex: 1; }
+    #mobile-bottom-bar .seg .seg-btn { flex: 1; min-height: 44px; }
+    #mobile-bottom-bar .btn { min-height: 48px; padding: 0 18px; font-size: 14px; }
+    @media (min-width: 1024px) { #mobile-bottom-bar { display: none; } }
+
+    .scrim { position: fixed; inset: 0; z-index: 35; background: rgba(15, 23, 42, .5); opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .scrim.show { opacity: 1; pointer-events: auto; }
+    .sheet {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+      display: flex; flex-direction: column;
+      background: #fff; border-radius: 20px 20px 0 0; border-top: 1px solid var(--line-2);
+      box-shadow: 0 -12px 40px rgba(15, 23, 42, .28);
+      max-height: min(58dvh, 560px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      transform: translateY(105%); visibility: hidden;
+      transition: transform .26s cubic-bezier(.16, 1, .3, 1), visibility 0s linear .26s;
+    }
+    .sheet.open { transform: none; visibility: visible; transition-delay: 0s; }
+    .sheet.tall { max-height: 80dvh; }
+    @media (min-width: 1024px) { .sheet, .scrim { display: none; } }
+    .sheet-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px 8px; border-bottom: 1px solid var(--line); }
+    .sheet-grab { position: absolute; left: 50%; top: 5px; width: 36px; height: 4px; margin-left: -18px; border-radius: 4px; background: var(--line-2); }
+    .sheet-title { min-width: 0; padding-top: 6px; }
+    .sheet-title b { display: block; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+    .sheet-title span { display: block; font-size: 15px; font-weight: 800; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sheet-body { padding: 14px 16px 16px; overflow-y: auto; flex: 1; overscroll-behavior: contain; }
+    #edit-sheet-body { padding-bottom: 0; }
+    .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .tile {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-height: 76px; padding: 12px;
+      background: #f8fafc; border: 1px solid var(--line-2); border-radius: 14px; text-align: left;
+    }
+    .tile:active { background: #e2e8f0; }
+    .tile b { font-size: 14px; }
+    .tile small { font-size: 11.5px; color: var(--muted); line-height: 1.3; }
+    .tile.span2 { grid-column: span 2; }
+    .swatch { display: inline-block; width: 34px; height: 20px; flex: none; vertical-align: middle; }
+    .swatch.style-note { padding: 0; }
+    .swatch.style-badge { width: 24px; height: 20px; }
+    .swatch.style-circle { width: 22px; height: 22px; }
+    .swatch.style-room { width: 28px; }
+
+    /* =====================================================================
+       STORE INFO DRAWER
+       ===================================================================== */
+    #info-drawer {
+      position: fixed; z-index: 42; right: 12px; top: 64px; bottom: calc(var(--bar-h) + 12px);
+      width: min(92vw, 380px); display: flex; flex-direction: column; overflow: hidden;
+      background: #fff; border: 1px solid var(--line-2); border-radius: 18px; box-shadow: 0 24px 60px -10px rgba(2, 6, 23, .45);
+    }
+    @media (min-width: 1024px) { #info-drawer { top: 124px; } }
+    .drawer-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px; background: var(--dark); color: #fff; }
+    .drawer-head h2 { margin: 0; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+    .drawer-head p { margin: 2px 0 0; font-size: 11.5px; color: #cbd5e1; }
+    .drawer-body { padding: 14px; overflow-y: auto; display: grid; gap: 14px; font-size: 12.5px; color: var(--ink-2); align-content: start; }
+    .card { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #f8fafc; }
+    .card .photo { position: relative; height: 150px; background: linear-gradient(135deg, #064e3b, #0f172a); display: grid; place-items: center; color: #6ee7b7; font-weight: 800; font-size: 22px; letter-spacing: .04em; }
+    .card .photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .card .pad { padding: 12px; }
+    .card h3 { margin: 0; font-size: 14px; color: var(--ink); }
+    .card p { margin: 4px 0 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .card a { color: var(--accent); font-weight: 600; text-decoration: none; }
+    .legend { display: grid; gap: 8px; padding: 12px; }
+    .legend-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
+    .legend-row .swatch { background-clip: padding-box; }
+    .legend h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink); margin: 0 0 2px; }
+
+    /* =====================================================================
+       MODALS & TOASTS
+       ===================================================================== */
+    .modal { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(15, 23, 42, .6); }
+    .modal-card { width: 100%; max-width: 520px; max-height: 90dvh; overflow-y: auto; padding: 20px; background: #fff; border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 30px 80px rgba(2, 6, 23, .5); }
+    .modal-card.sm { max-width: 400px; }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+    .modal-head h2, .modal-card h3 { margin: 0; font-size: 17px; font-weight: 800; }
+    .help-list { display: grid; gap: 12px; font-size: 13.5px; color: var(--ink-2); line-height: 1.55; }
+    .help-list b { color: var(--ink); }
+    .modal-actions { margin-top: 18px; display: flex; justify-content: flex-end; gap: 8px; }
+
+    #toast-container { position: fixed; z-index: 70; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; bottom: 22px; width: max-content; max-width: 92vw; }
+    @media (max-width: 1023.98px) { #toast-container { bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 116px); } }
+    .toast {
+      display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 999px;
+      background: var(--dark); color: #fff; border: 1px solid #334155; box-shadow: 0 8px 24px rgba(2, 6, 23, .4);
+      font-size: 13px; font-weight: 600; pointer-events: auto; transition: opacity .3s, transform .3s; animation: toast-in .2s ease-out;
+    }
+    .toast button { background: none; border: 0; color: #6ee7b7; font-weight: 800; font-size: 13px; padding: 2px 0; }
+    .toast.out { opacity: 0; transform: translateY(-4px); }
+    @keyframes toast-in { from { opacity: 0; transform: translateY(6px); } }
+
+    @media (max-width: 1023.98px) { body.edit-sheet-open #zoom-ctl { display: none; } }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
+
+    /* =====================================================================
+       PRINT — landscape, black & white, one page
+       ===================================================================== */
+    .print-only { display: none; }
+    @page { size: landscape; margin: 0.25in; }
+    @media print {
+      html, body { background: #fff !important; height: auto !important; width: auto !important; overflow: visible !important; display: block !important; }
+      .appbar, .toolbar, #inspector-panel, #mobile-bottom-bar, .sheet, .scrim, #zoom-ctl, #popover-host,
+      #search-results-popover, #toast-container, .modal, #info-drawer, .canvas-watermark, .resize-handle, .no-print { display: none !important; }
+      .main, .canvas-region { display: block !important; overflow: visible !important; }
+      #workspace { display: block !important; overflow: visible !important; background: #fff !important; padding: 0 !important; }
+      #canvas-pad { margin: 0 auto !important; padding: 0 !important; width: 980px; }
+      #canvas-sizer { width: 980px !important; height: 686px !important; overflow: hidden; }
+      #canvas-scaler { position: static !important; transform: none !important; width: 1400px !important; height: 980px !important; zoom: 0.7; }
+      #floor-canvas { background-image: none !important; background-color: #fff !important; border: none !important; box-shadow: none !important; }
+      .print-only { display: flex !important; justify-content: space-between; align-items: baseline; width: 980px; margin: 0 auto 6px; font-size: 13px; font-weight: 800; color: #000; }
+      .print-only span.d { font-weight: 600; font-size: 11px; }
+      .plan-item.selected, .plan-item.search-match, .plan-item.pulse { outline: none !important; box-shadow: none !important; animation: none !important; }
+      .plan-item.search-dimmed { opacity: 1 !important; }
+      .style-note { border: none !important; }
+      .style-shaded, .style-badge { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .style-shaded { background-color: #e5e7eb !important; }
+      .style-badge { background-color: #000 !important; color: #fff !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Icon sprite -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="i-print" viewBox="0 0 24 24"><path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3.2"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></symbol>
+      <symbol id="i-undo" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></symbol>
+      <symbol id="i-redo" viewBox="0 0 24 24"><path d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></symbol>
+      <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></symbol>
+      <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></symbol>
+      <symbol id="i-move" viewBox="0 0 24 24"><path d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></symbol>
+      <symbol id="i-help" viewBox="0 0 24 24"><path d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></symbol>
+      <symbol id="i-photo" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></symbol>
+      <symbol id="i-share" viewBox="0 0 24 24"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></symbol>
+      <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></symbol>
+      <symbol id="i-up" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></symbol>
+      <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></symbol>
+      <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+      <symbol id="i-pointer" viewBox="0 0 24 24"><path d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/></symbol>
+    </defs>
+  </svg>
+
+  <!-- ===================================================================
+       APP BAR
+       =================================================================== -->
+  <header class="appbar no-print" id="top-header">
+    <div class="brand">
+      <div class="brand-logo" aria-hidden="true">
+        <span>HM</span>
+        <img src="https://www.goharvestmarket.com/wp-content/uploads/2021/09/Harvest-Market-Circle-Icon.png" alt="" onload="this.previousElementSibling.hidden=true" onerror="this.hidden=true">
+      </div>
+      <div class="brand-text">
+        <h1>Harvest Market • Springfield, IL</h1>
+        <p>3001 S Veterans Pkwy • Floor Plan &amp; Aisle Directory</p>
+      </div>
+    </div>
+
+    <div class="seg on-dark" role="tablist" aria-label="Map view">
+      <button id="tab-aisle" class="seg-btn is-active" role="tab" aria-selected="true" onclick="switchMode('aisle')">Aisle Map</button>
+      <button id="tab-arch" class="seg-btn" role="tab" aria-selected="false" onclick="switchMode('arch')">Blueprint</button>
+    </div>
+
+    <div class="appbar-actions">
+      <button class="btn btn-dark only-desktop" onclick="toggleInfo()" title="Store info &amp; legend">
+        <svg class="i"><use href="#i-photo"/></svg><span>Store &amp; Legend</span>
+      </button>
+      <button class="btn btn-dark btn-icon only-desktop" onclick="openHelp()" aria-label="Help" title="Quick help">
+        <svg class="i"><use href="#i-help"/></svg>
+      </button>
+      <button class="btn btn-dark only-desktop" onclick="exportJSON()" title="Download a backup of your layout">
+        <svg class="i"><use href="#i-download"/></svg><span>Save</span>
+      </button>
+      <label class="btn btn-dark file-btn only-desktop" title="Load a saved layout">
+        <svg class="i"><use href="#i-upload"/></svg><span>Load</span>
+        <input type="file" id="import-input" accept=".json,application/json" onchange="importJSON(event)">
+      </label>
+      <button class="btn btn-primary" onclick="printCleanBW()" aria-label="Print black and white">
+        <svg class="i"><use href="#i-print"/></svg><span class="hide-xs">Print B&amp;W</span>
+      </button>
+      <button class="btn btn-dark btn-icon only-mobile" onclick="openSheet('menu-sheet')" aria-label="More options">
+        <svg class="i"><use href="#i-menu"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===================================================================
+       TOOLBAR
+       =================================================================== -->
+  <div class="toolbar no-print" id="main-toolbar">
+    <div class="seg only-desktop" role="group" aria-label="Interaction mode">
+      <button class="seg-btn is-active" data-mode-btn="edit" aria-pressed="true" onclick="setInteractionMode('edit')" title="Click to select &amp; edit. Drag the selected item to move it.">
+        <svg class="i i-sm"><use href="#i-pencil"/></svg>View / Edit
+      </button>
+      <button class="seg-btn" data-mode-btn="move" aria-pressed="false" onclick="setInteractionMode('move')" title="Drag any item directly">
+        <svg class="i i-sm"><use href="#i-move"/></svg>Move
+      </button>
+    </div>
+
+    <div class="search-wrap" id="search-wrap">
+      <div class="search-field">
+        <svg class="i i-sm"><use href="#i-search"/></svg>
+        <input id="quick-search-input" type="search" placeholder="Find an aisle or item…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"
+               oninput="handleSearch(this.value)" onfocus="handleSearch(this.value)" onkeydown="onSearchKey(event)" aria-label="Find aisle or item">
+        <span id="search-match-pill" class="pill" hidden></span>
+        <button id="clear-search-btn" class="search-clear" hidden onclick="clearSearch()" aria-label="Clear search"><svg class="i i-sm"><use href="#i-close"/></svg></button>
+      </div>
+      <div id="search-results-popover" class="popover" hidden></div>
+    </div>
+
+    <div class="toolbar-spacer only-desktop"></div>
+
+    <div class="tool-group only-desktop">
+      <button class="btn" onclick="addNewItem('aisle')">+ Aisle</button>
+      <button class="btn" onclick="addNewItem('endcap')">+ Endcap</button>
+      <button class="btn" onclick="addNewItem('angled')">+ Table</button>
+      <button class="btn" onclick="addNewItem('badge')">+ #</button>
+      <button class="btn" onclick="addNewItem('note')">+ Note</button>
+    </div>
+
+    <div class="tool-group">
+      <button id="btn-undo" class="btn btn-icon" onclick="undo()" aria-label="Undo" title="Undo (Ctrl+Z)"><svg class="i"><use href="#i-undo"/></svg></button>
+      <button id="btn-redo" class="btn btn-icon" onclick="redo()" aria-label="Redo" title="Redo (Ctrl+Y)"><svg class="i"><use href="#i-redo"/></svg></button>
+    </div>
+
+    <button id="btn-text" class="btn only-desktop" onclick="cycleTextSize()" title="Make the words on the map bigger or smaller">Text: Large</button>
+    <button id="btn-snap" class="btn btn-soft-blue only-desktop" onclick="toggleSnap()" title="Snap items to a 10px grid">Snap: ON</button>
+    <button class="btn btn-soft-danger only-desktop" onclick="confirmReset()">Reset</button>
+  </div>
+
+  <!-- Print-only heading -->
+  <div class="print-only"><span id="print-title">Harvest Market • Springfield, IL — Aisle Map</span><span class="d" id="print-date"></span></div>
+
+  <!-- ===================================================================
+       MAIN WORKSPACE
+       =================================================================== -->
+  <div class="main">
+    <div class="canvas-region">
+      <div id="workspace" aria-label="Store floor plan">
+        <div id="canvas-pad">
+          <div id="canvas-sizer" style="width:1050px;height:735px">
+            <div id="canvas-scaler" style="transform:scale(.75)">
+              <div id="floor-canvas" class="canvas-grid">
+                <div class="canvas-watermark">
+                  <img src="https://www.goharvestmarket.com/wp-content/uploads/2021/09/Harvest-Market-Circle-Icon.png" alt="" onerror="this.remove()">
+                  <span>Harvest Market • Springfield, IL</span>
+                </div>
+
+                                <svg id="arch-backdrop" viewBox="0 0 1400 980" hidden>
+                <g stroke="#000000" fill="none">
+                  <!-- Main Outer Shell -->
+                  <path d="M 110 30 L 660 75 Q 980 95 1265 65 L 1295 920 L 705 915 L 705 900 L 100 905 Z" stroke-width="4" fill="#ffffff"/>
+                  <path d="M 118 38 L 660 83 Q 980 103 1257 73 L 1287 912 L 713 907 L 713 892 L 108 897 Z" stroke-width="1.5"/>
+
+                  <!-- Top Backroom / Prep Rooms / Coolers -->
+                  <rect x="145" y="75" width="195" height="190" stroke-width="2.5"/>
+                  <rect x="155" y="85" width="45" height="145" stroke-width="1.5"/>
+                  <rect x="215" y="105" width="55" height="75" stroke-width="1.5"/>
+                  <line x1="145" y1="225" x2="340" y2="225" stroke-width="1.5"/>
+
+                  <!-- Top Center Meat / Seafood Prep -->
+                  <rect x="370" y="95" width="275" height="110" stroke-width="2.5"/>
+                  <line x1="470" y1="95" x2="470" y2="205" stroke-width="1.5"/>
+                  <rect x="655" y="135" width="210" height="80" stroke-width="2.5"/>
+                  <line x1="740" y1="135" x2="740" y2="215" stroke-width="1.5"/>
+
+                  <!-- Top Right Dairy / Freezer Coolers -->
+                  <rect x="930" y="135" width="115" height="85" stroke-width="2.5"/>
+                  <rect x="1055" y="95" width="195" height="120" stroke-width="2.5"/>
+                  <line x1="1150" y1="95" x2="1150" y2="215" stroke-width="1.5"/>
+
+                  <!-- Left Side Deli / Kitchen / Bakery Prep -->
+                  <rect x="115" y="295" width="60" height="230" stroke-width="2"/>
+                  <path d="M 195 315 L 365 315 L 395 345 L 395 505 L 365 535 L 195 535 Z" stroke-width="2.5"/>
+                  <rect x="210" y="340" width="75" height="150" stroke-width="1.5"/>
+                  <rect x="305" y="355" width="55" height="130" stroke-width="1.5"/>
+
+                  <!-- Bottom Left Restrooms / Coffee Kiosk / Seating -->
+                  <rect x="110" y="565" width="60" height="325" stroke-width="2"/>
+                  <line x1="110" y1="650" x2="170" y2="650" stroke-width="1.5"/>
+                  <line x1="110" y1="745" x2="170" y2="745" stroke-width="1.5"/>
+                  <line x1="110" y1="825" x2="170" y2="825" stroke-width="1.5"/>
+                  <rect x="205" y="845" width="150" height="45" stroke-width="2"/>
+
+                  <!-- Front Vestibule & Cart Storage -->
+                  <rect x="375" y="835" width="320" height="58" stroke-width="2"/>
+                  <line x1="470" y1="835" x2="470" y2="893" stroke-width="2"/>
+                  <g stroke-width="1">
+                    <line x1="485" y1="848" x2="645" y2="848"/>
+                    <line x1="485" y1="856" x2="645" y2="856"/>
+                    <line x1="485" y1="864" x2="645" y2="864"/>
+                    <line x1="485" y1="872" x2="645" y2="872"/>
+                    <line x1="485" y1="880" x2="645" y2="880"/>
+                  </g>
+
+                  <!-- Center Produce Cooler Spine -->
+                  <rect x="705" y="495" width="75" height="235" stroke-width="2.5"/>
+                  <line x1="705" y1="585" x2="780" y2="585" stroke-width="1.5"/>
+                  <line x1="705" y1="665" x2="780" y2="665" stroke-width="1.5"/>
+
+                  <!-- Customer Service / Front Office Box -->
+                  <rect x="705" y="775" width="105" height="75" stroke-width="2"/>
+                  <line x1="755" y1="775" x2="755" y2="850" stroke-width="1.5"/>
+
+                  <!-- Bottom Right Checkout Lanes -->
+                  <rect x="855" y="750" width="315" height="115" stroke-width="1.5" stroke-dasharray="6,4"/>
+                  <g stroke-width="2">
+                    <path d="M 885 845 L 885 810 L 905 810"/>
+                    <path d="M 935 845 L 935 810 L 955 810"/>
+                    <path d="M 985 845 L 985 810 L 1005 810"/>
+                    <path d="M 1035 845 L 1035 810 L 1055 810"/>
+                    <path d="M 1085 845 L 1085 810 L 1105 810"/>
+                    <path d="M 1135 845 L 1135 810 L 1155 810"/>
+                  </g>
+
+                  <!-- Bottom Right Corner Pharmacy -->
+                  <path d="M 1210 745 L 1285 745 L 1285 905 L 1190 905 L 1190 785 Z" stroke-width="2.5"/>
+                  <rect x="1220" y="785" width="45" height="75" stroke-width="1.5"/>
+
+                  <!-- Center Divider Line -->
+                  <line x1="715" y1="220" x2="715" y2="490" stroke-width="1.5" stroke-dasharray="5,5"/>
+                </g>
+              </svg>
+
+                <div id="items-layer" data-mode="edit"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="zoom-ctl" class="no-print" role="group" aria-label="Zoom">
+        <button onclick="zoomBy(1.25)" aria-label="Zoom in"><svg class="i"><use href="#i-plus"/></svg></button>
+        <div id="zoom-label" class="zoom-label">75%</div>
+        <button onclick="zoomBy(0.8)" aria-label="Zoom out"><svg class="i"><use href="#i-minus"/></svg></button>
+        <button onclick="fitCanvasToScreen(true)" aria-label="Fit whole map to screen" title="Fit to screen" style="border-top:1px solid var(--line)"><svg class="i"><use href="#i-fit"/></svg></button>
+      </div>
+    </div>
+
+    <!-- Desktop inspector -->
+    <aside id="inspector-panel" aria-label="Item details">
+      <div id="desktop-no-selection" class="empty-state">
+        <div class="empty-icon"><svg class="i" style="width:24px;height:24px"><use href="#i-pointer"/></svg></div>
+        <h3>Select any item</h3>
+        <p>Click an aisle, endcap, display table or note on the map to rename, rotate, resize or move it.</p>
+        <div class="tips">
+          <b class="t">Shortcuts</b>
+          <div>• <b>Click</b> an item to select it, then <b>drag</b> it to move</div>
+          <div>• <b>Move mode</b> drags anything directly</div>
+          <div>• <b>Double-click</b> to rename in place</div>
+          <div>• <b>Arrows</b> nudge · <b>Shift+Arrows</b> nudge 10 · <b>Ctrl+D</b> duplicate</div>
+          <div>• <b>Ctrl + scroll</b> zooms the map</div>
+        </div>
+      </div>
+      <div id="inspector-form-host"></div>
+    </aside>
+  </div>
+
+  <!-- ===================================================================
+       PHONE / TABLET BOTTOM BAR
+       =================================================================== -->
+  <nav id="mobile-bottom-bar" class="no-print" aria-label="Editing tools">
+    <div class="seg" role="group" aria-label="Interaction mode">
+      <button class="seg-btn is-active" data-mode-btn="edit" aria-pressed="true" onclick="setInteractionMode('edit')"><svg class="i i-sm"><use href="#i-pencil"/></svg>Edit</button>
+      <button class="seg-btn" data-mode-btn="move" aria-pressed="false" onclick="setInteractionMode('move')"><svg class="i i-sm"><use href="#i-move"/></svg>Move</button>
+    </div>
+    <button class="btn btn-solid" onclick="openSheet('add-sheet')"><svg class="i"><use href="#i-plus"/></svg>Add</button>
+  </nav>
+
+  <div id="scrim" class="scrim" onclick="closeAllSheets()"></div>
+
+  <!-- Edit sheet (selected item) -->
+  <section id="edit-sheet" class="sheet no-print" aria-label="Edit item" aria-hidden="true">
+    <span class="sheet-grab"></span>
+    <div class="sheet-head">
+      <div class="sheet-title"><b>Editing</b><span id="edit-sheet-name">Item</span></div>
+      <button class="btn btn-solid" onclick="deselectAll()">Done</button>
+    </div>
+    <div id="edit-sheet-body" class="sheet-body"></div>
+  </section>
+
+  <!-- Add sheet -->
+  <section id="add-sheet" class="sheet no-print" aria-label="Add to map" aria-hidden="true">
+    <span class="sheet-grab"></span>
+    <div class="sheet-head">
+      <div class="sheet-title"><b>Add to map</b><span>What are you adding?</span></div>
+      <button class="btn" onclick="closeAllSheets()">Close</button>
+    </div>
+    <div class="sheet-body">
+      <div class="tiles">
+        <button class="tile" onclick="closeAllSheets(); addNewItem('aisle')"><span class="swatch style-aisle"></span><b>Aisle</b><small>Long white box for a shelf run</small></button>
+        <button class="tile" onclick="closeAllSheets(); addNewItem('endcap')"><span class="swatch style-endcap" style="width:20px;height:30px"></span><b>Endcap</b><small>Tall display at an aisle end</small></button>
+        <button class="tile" onclick="closeAllSheets(); addNewItem('angled')"><span class="swatch style-shaded"></span><b>Display table</b><small>Gray, angled for seasonal tables</small></button>
+        <button class="tile" onclick="closeAllSheets(); addNewItem('badge')"><span class="swatch style-badge"></span><b>Aisle number</b><small>Black number badge</small></button>
+        <button class="tile span2" onclick="closeAllSheets(); addNewItem('note')"><span class="swatch style-note"></span><b>Note</b><small>Free text, no border when printed</small></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- More / menu sheet -->
+  <section id="menu-sheet" class="sheet tall no-print" aria-label="More tools" aria-hidden="true">
+    <span class="sheet-grab"></span>
+    <div class="sheet-head">
+      <div class="sheet-title"><b>Harvest Market • Springfield</b><span>More tools</span></div>
+      <button class="btn" onclick="closeAllSheets()">Close</button>
+    </div>
+    <div class="sheet-body">
+      <div class="tiles">
+        <button class="tile" onclick="closeAllSheets(); toggleInfo()"><svg class="i"><use href="#i-photo"/></svg><b>Store &amp; legend</b><small>Address, hours, what each box style means</small></button>
+        <button class="tile" onclick="closeAllSheets(); openHelp()"><svg class="i"><use href="#i-help"/></svg><b>Help</b><small>How to move, edit and zoom</small></button>
+        <button class="tile" onclick="cycleTextSize()"><span style="font:800 18px Inter,sans-serif;line-height:18px">Aa</span><b data-text-label>Text size: Large</b><small>Tap to cycle bigger / smaller words</small></button>
+        <button class="tile" onclick="toggleSnap()"><svg class="i"><use href="#i-grid"/></svg><b data-snap-label>Grid snap: ON</b><small>Keeps moved items lined up</small></button>
+        <button id="btn-share" class="tile" hidden onclick="closeAllSheets(); shareLayout()"><svg class="i"><use href="#i-share"/></svg><b>Share layout</b><small>Send the file to your boss or a coworker</small></button>
+        <button class="tile" onclick="closeAllSheets(); exportJSON()"><svg class="i"><use href="#i-download"/></svg><b>Download backup</b><small>Saves a .json copy of your layout</small></button>
+        <label class="tile" style="cursor:pointer"><svg class="i"><use href="#i-upload"/></svg><b>Load backup</b><small>Open a saved .json layout</small>
+          <input type="file" accept=".json,application/json" hidden onchange="importJSON(event); closeAllSheets();">
+        </label>
+        <button class="btn btn-soft-danger tile span2" style="min-height:48px;align-items:center;flex-direction:row;justify-content:center;gap:8px" onclick="closeAllSheets(); confirmReset()"><svg class="i"><use href="#i-reset"/></svg><b>Reset this view to default</b></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       STORE INFO DRAWER
+       =================================================================== -->
+  <aside id="info-drawer" class="no-print" hidden aria-label="Store info and legend">
+    <div class="drawer-head">
+      <div>
+        <h2>Store &amp; Legend</h2>
+        <p>Harvest Market • Springfield, IL</p>
+      </div>
+      <button class="btn btn-dark btn-icon" onclick="toggleInfo()" aria-label="Close"><svg class="i"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="drawer-body">
+      <div class="card">
+        <div class="photo">
+          HM
+          <img src="https://www.goharvestmarket.com/wp-content/uploads/2025/12/springfield-niemann-harvest-market.jpg" alt="Harvest Market Springfield storefront" loading="lazy" onerror="this.remove()">
+        </div>
+        <div class="pad">
+          <h3>Niemann Harvest Market — Springfield</h3>
+          <p>3001 S Veterans Pkwy, Springfield, IL 62704 • <a href="tel:+12177933601">(217) 793-3601</a></p>
+          <p>Open daily 6:00 AM – 10:00 PM • Produce, Butcher, Bakery, Cheese, Coffee Shop &amp; Farmhouse seating.</p>
+        </div>
+      </div>
+
+      <div class="card legend">
+        <h3>Legend</h3>
+        <div class="legend-row"><span class="swatch style-aisle"></span> Aisle / shelf run</div>
+        <div class="legend-row"><span class="swatch style-endcap"></span> Endcap or display box</div>
+        <div class="legend-row"><span class="swatch style-shaded"></span> Highlighted / product block</div>
+        <div class="legend-row"><span class="swatch style-circle"></span> Round display</div>
+        <div class="legend-row"><span class="swatch style-badge" style="font-size:10px;display:inline-grid;place-items:center">7</span> Aisle number</div>
+        <div class="legend-row"><span class="swatch style-note"></span> Note (no border when printed)</div>
+      </div>
+
+      <div class="card">
+        <div class="pad">
+          <h3>Sharing &amp; backups</h3>
+          <p>Edits save automatically on <b>this device only</b>. To send your version to someone else, use <b>Save</b> (or <b>Share layout</b> on a phone) and have them <b>Load</b> the file.</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- Help -->
+  <div id="help-modal" class="modal no-print" hidden onclick="closeHelp()">
+    <div class="modal-card" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="help-title">
+      <div class="modal-head">
+        <h2 id="help-title">How to use this map</h2>
+        <button class="btn btn-icon" onclick="closeHelp()" aria-label="Close"><svg class="i"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="help-list">
+        <p style="margin:0"><b>Find something fast.</b> Type an aisle or product in the search box and tap a result. The map zooms to it and flashes it.</p>
+        <p style="margin:0"><b>Look around.</b> Drag to scroll, <b>pinch</b> or use the +/− buttons to zoom, <b>double-tap</b> empty space to zoom in or back out, and tap <b>Fit</b> to see the whole store.</p>
+        <p style="margin:0"><b>Edit an item.</b> In <b>Edit</b> mode, tap an item to open its settings — rename it, swap to a seasonal label, change its style, rotate or resize it. Then <b>drag the selected item</b> to move it.</p>
+        <p style="margin:0"><b>Move lots of things.</b> Switch to <b>Move</b> mode to drag any item directly. Use two fingers to scroll and zoom while in Move mode.</p>
+        <p style="margin:0"><b>Print.</b> <b>Print B&amp;W</b> makes a clean landscape page without the toolbars or grid dots.</p>
+        <p style="margin:0"><b>Saving.</b> Changes save automatically on this device. Use <b>Save</b> to download a backup or send your layout to someone, and <b>Load</b> to open one.</p>
+      </div>
+      <div class="modal-actions"><button class="btn btn-solid" onclick="closeHelp()">Got it</button></div>
+    </div>
+  </div>
+
+  <!-- Reset confirmation -->
+  <div id="confirm-modal" class="modal no-print" hidden>
+    <div class="modal-card sm" role="alertdialog" aria-modal="true" aria-labelledby="reset-title">
+      <h3 id="reset-title">Reset this view?</h3>
+      <p style="margin:8px 0 0;font-size:13px;color:var(--muted);line-height:1.5">This restores the default store layout for the current view (<b id="reset-view-name">Aisle Map</b>) and clears your changes to it. You can undo right after.</p>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeConfirmModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="executeReset()">Reset layout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shared inspector form (lives in the desktop sidebar or the phone edit sheet) -->
+  <template id="inspector-form-template">
+    <div id="active-selection-controls" class="form">
+      <div class="fld">
+        <div class="fld-head"><label for="prop-text">Label / product name</label><button class="link" onclick="clearSelectedText()">Clear</button></div>
+        <textarea id="prop-text" rows="2" oninput="updateSelectedProp('text', this.value)"></textarea>
+      </div>
+
+      <div class="fld">
+        <label>Quick labels</label>
+        <div class="chips">
+          <button class="chip" onclick="applyQuickLabel('SEASONAL\nENDCAP')">Seasonal</button>
+          <button class="chip" onclick="applyQuickLabel('HOLIDAY\nDISPLAY')">Holiday</button>
+          <button class="chip" onclick="applyQuickLabel('CLEARANCE\nENDCAP')">Clearance</button>
+          <button class="chip" onclick="applyQuickLabel('WATER /\nBEVERAGES')">Beverages</button>
+          <button class="chip" onclick="applyQuickLabel('BAKERY\nDISPLAY')">Bakery</button>
+        </div>
+      </div>
+
+      <div class="fld">
+        <label for="prop-style">Block style</label>
+        <select id="prop-style" onchange="updateSelectedProp('style', this.value)">
+          <option value="aisle">Standard aisle (white box)</option>
+          <option value="shaded">Highlight / shaded box (gray)</option>
+          <option value="endcap">Endcap / display box</option>
+          <option value="circle">Circular display</option>
+          <option value="badge">Aisle number badge (black)</option>
+          <option value="note">Text note (no border on print)</option>
+          <option value="room">Room / wall label</option>
+        </select>
+      </div>
+
+      <div class="grid2">
+        <div class="fld">
+          <label for="prop-fontSize">Text size</label>
+          <input id="prop-fontSize" type="number" inputmode="decimal" step="0.5" min="5" max="48" oninput="onNum('fontSize', this)" onchange="onNumCommit('fontSize', this)">
+        </div>
+        <div class="fld">
+          <label>Text direction</label>
+          <button id="prop-vertical" class="btn btn-block" style="min-height:40px" onclick="toggleSelectedVertical()">Horizontal</button>
+        </div>
+      </div>
+
+      <div class="fld">
+        <label>Rotation (<span id="prop-rot-val">0</span>°)</label>
+        <div class="grid4">
+          <button class="btn" onclick="setSelectedRotation(0)">0°</button>
+          <button class="btn" onclick="rotateSelectedBy(-45)">−45°</button>
+          <button class="btn" onclick="rotateSelectedBy(45)">+45°</button>
+          <button class="btn" onclick="rotateSelectedBy(90)">+90°</button>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="fld">
+          <label for="prop-w">Width</label>
+          <input id="prop-w" type="number" inputmode="numeric" step="5" min="16" max="1200" oninput="onNum('w', this)" onchange="onNumCommit('w', this)">
+        </div>
+        <div class="fld">
+          <label for="prop-h">Height</label>
+          <input id="prop-h" type="number" inputmode="numeric" step="5" min="16" max="900" oninput="onNum('h', this)" onchange="onNumCommit('h', this)">
+        </div>
+      </div>
+
+      <div class="fld">
+        <label>Position</label>
+        <div class="grid2" style="margin-bottom:8px">
+          <input id="prop-x" type="number" inputmode="numeric" step="5" aria-label="X position" oninput="onNum('x', this)" onchange="onNumCommit('x', this)">
+          <input id="prop-y" type="number" inputmode="numeric" step="5" aria-label="Y position" oninput="onNum('y', this)" onchange="onNumCommit('y', this)">
+        </div>
+        <div class="grid4" id="nudge-pad">
+          <button class="btn" data-dx="-5" data-dy="0" aria-label="Nudge left"><svg class="i"><use href="#i-left"/></svg></button>
+          <button class="btn" data-dx="0" data-dy="-5" aria-label="Nudge up"><svg class="i"><use href="#i-up"/></svg></button>
+          <button class="btn" data-dx="0" data-dy="5" aria-label="Nudge down"><svg class="i"><use href="#i-down"/></svg></button>
+          <button class="btn" data-dx="5" data-dy="0" aria-label="Nudge right"><svg class="i"><use href="#i-right"/></svg></button>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-solid" onclick="duplicateSelected()"><svg class="i i-sm"><use href="#i-copy"/></svg>Duplicate</button>
+        <button class="btn btn-danger" onclick="deleteSelected()"><svg class="i i-sm"><use href="#i-trash"/></svg>Delete</button>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    // =========================================================================
+    // DEFAULT STORE DATA PRESETS (unchanged from your original file)
+    // =========================================================================
+    const DEFAULT_AISLE_ITEMS = [
+      // --- TOP LEFT: FROZEN DOORS & ENDCAPS ---
+      { id: 'f1_l1', x: 75, y: 65, w: 30, h: 35, text: 'RAMEN\nNOODLES', style: 'shaded', fontSize: 7, vertical: false },
+      { id: 'f1_l2', x: 75, y: 100, w: 30, h: 35, text: 'STEAM IN\nVEGGIES', style: 'shaded', fontSize: 7, vertical: false },
+      { id: 'f1_m1', x: 105, y: 65, w: 175, h: 35, text: 'FROZEN DOORS', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'f1_r1', x: 280, y: 65, w: 35, h: 35, text: 'COOL\nWHIP', style: 'shaded', fontSize: 7, vertical: false },
+
+      { id: 'f2_l2', x: 105, y: 100, w: 175, h: 35, text: 'FROZEN DOORS', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'f2_r1', x: 280, y: 100, w: 35, h: 35, text: 'MARIE\nCALENDER\nMP PIES', style: 'shaded', fontSize: 6.5, vertical: false },
+
+      { id: 'f3_l1', x: 75, y: 145, w: 30, h: 30, text: 'ORE IDA', style: 'shaded', fontSize: 7, vertical: false },
+      { id: 'f3_m1', x: 105, y: 145, w: 175, h: 30, text: 'FROZEN DOORS', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'f3_r1', x: 280, y: 145, w: 35, h: 30, text: 'FROZEN\nFRUIT', style: 'shaded', fontSize: 7, vertical: false },
+
+      { id: 'f4_l1', x: 75, y: 175, w: 30, h: 30, text: 'SISTER\nSCHUBERT', style: 'shaded', fontSize: 6.5, vertical: false },
+      { id: 'f4_m1', x: 105, y: 175, w: 175, h: 30, text: 'FROZEN DOORS', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'f4_r1', x: 280, y: 175, w: 35, h: 30, text: 'FRENCH\nFRIES', style: 'shaded', fontSize: 7, vertical: false },
+
+      // --- PAPER & DAIRY DOORS ---
+      { id: 'pd_l', x: 75, y: 230, w: 35, h: 80, text: 'BUTTER ENDCAP', style: 'endcap', fontSize: 8, vertical: true },
+      { id: 'pd_t', x: 110, y: 230, w: 170, h: 40, text: 'PAPER', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'pd_b', x: 110, y: 270, w: 170, h: 40, text: 'DAIRY DOORS', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'pd_r', x: 280, y: 230, w: 35, h: 80, text: "DOT'S PRETZELS", style: 'shaded', fontSize: 8, vertical: true },
+      { id: 'pd_num', x: 320, y: 295, w: 20, h: 20, text: '1', style: 'badge', fontSize: 10, vertical: false },
+
+      // --- DAIRY BUNKER ---
+      { id: 'db_l', x: 95, y: 330, w: 30, h: 55, text: 'EGG NOGS', style: 'endcap', fontSize: 8, vertical: true },
+      { id: 'db_m', x: 125, y: 330, w: 110, h: 55, text: 'DAIRY BUNKER', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'db_t1', x: 235, y: 330, w: 45, h: 27.5, text: 'TEA', style: 'aisle', fontSize: 8, vertical: false },
+      { id: 'db_t2', x: 235, y: 357.5, w: 45, h: 27.5, text: 'WATER', style: 'aisle', fontSize: 8, vertical: false },
+      { id: 'db_r', x: 280, y: 330, w: 35, h: 55, text: 'RAMBLER\nSPARKLING\nWATER', style: 'shaded', fontSize: 7, vertical: true },
+      { id: 'db_num', x: 320, y: 370, w: 20, h: 20, text: '4', style: 'badge', fontSize: 10, vertical: false },
+
+      // --- LEFT GROCERY AISLES ---
+      { id: 'lg1_l', x: 75, y: 420, w: 35, h: 80, text: 'KOMBUCHA ENDCAP', style: 'endcap', fontSize: 7.5, vertical: true },
+      { id: 'lg1_t', x: 110, y: 420, w: 170, h: 40, text: 'DAIRY DOORS', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'lg1_b', x: 110, y: 460, w: 170, h: 40, text: 'SNACKS AND BARS', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'lg1_r', x: 280, y: 420, w: 35, h: 80, text: 'NESTLE PURE LIFE', style: 'shaded', fontSize: 8, vertical: true },
+      { id: 'lg1_num', x: 320, y: 485, w: 20, h: 20, text: '5', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'lg2_l', x: 75, y: 520, w: 35, h: 60, text: 'MARTINELLI\nSPARKLING', style: 'endcap', fontSize: 7, vertical: true },
+      { id: 'lg2_t', x: 110, y: 520, w: 170, h: 30, text: 'JUICE', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'lg2_b', x: 110, y: 550, w: 170, h: 30, text: 'ETHNIC AISLE', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'lg2_r', x: 280, y: 520, w: 35, h: 60, text: 'CAMELLIA RICE', style: 'shaded', fontSize: 7.5, vertical: true },
+      { id: 'lg2_num', x: 320, y: 565, w: 20, h: 20, text: '6', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'lg3_l', x: 75, y: 595, w: 35, h: 60, text: 'SPARTAN VALLEY\nOLIVE OIL', style: 'endcap', fontSize: 7, vertical: true },
+      { id: 'lg3_t', x: 110, y: 595, w: 170, h: 30, text: 'CANNED MEATS AND RICE', style: 'aisle', fontSize: 9.5, vertical: false },
+      { id: 'lg3_b', x: 110, y: 625, w: 170, h: 30, text: 'BREAD AND PEANUT BUTTER', style: 'aisle', fontSize: 9.5, vertical: false },
+      { id: 'lg3_r', x: 280, y: 595, w: 35, h: 60, text: 'SKINNY STIX\nSYRUPS', style: 'shaded', fontSize: 7, vertical: true },
+      { id: 'lg3_num', x: 320, y: 640, w: 20, h: 20, text: '7', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'lg4_l', x: 75, y: 670, w: 35, h: 60, text: 'GHIRARDELLI\nCHIPS & BUTTER', style: 'endcap', fontSize: 7, vertical: true },
+      { id: 'lg4_t', x: 110, y: 670, w: 170, h: 30, text: 'DRESSINGS AND CONDIMENTS', style: 'aisle', fontSize: 9, vertical: false },
+      { id: 'lg4_b', x: 110, y: 700, w: 170, h: 30, text: 'PASTA AND SAUCE', style: 'aisle', fontSize: 9.5, vertical: false },
+      { id: 'lg4_r', x: 280, y: 670, w: 35, h: 60, text: 'FRENCH FRIED\nONIONS', style: 'shaded', fontSize: 7, vertical: true },
+      { id: 'lg4_num', x: 320, y: 715, w: 20, h: 20, text: '8', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'lg5_l', x: 135, y: 745, w: 35, h: 55, text: 'PASTA &\nMAC N CHEESE', style: 'endcap', fontSize: 6.5, vertical: true },
+      { id: 'lg5_t', x: 170, y: 745, w: 110, h: 27.5, text: 'CANNED VEGGIE', style: 'aisle', fontSize: 9, vertical: false },
+      { id: 'lg5_b', x: 170, y: 772.5, w: 110, h: 27.5, text: 'SOUPS', style: 'aisle', fontSize: 9.5, vertical: false },
+      { id: 'lg5_r', x: 280, y: 745, w: 35, h: 55, text: 'STONEWALL', style: 'shaded', fontSize: 7.5, vertical: true },
+      { id: 'lg5_num', x: 320, y: 785, w: 20, h: 20, text: '9', style: 'badge', fontSize: 10, vertical: false },
+
+      // --- BOTTOM LEFT: ISLAND DISPLAY & DELI ---
+      { id: 'note_island', x: 85, y: 825, w: 185, h: 55, text: 'ISLAND DISPLAY\nTURKEY CENTER\nFOIL PANS, STUFFING, ETC..', style: 'note', fontSize: 10, vertical: false },
+      { id: 'deli_main', x: 225, y: 895, w: 360, h: 28, text: 'DELI COUNTER', style: 'aisle', fontSize: 11, vertical: false },
+      { id: 'deli_ext', x: 553, y: 923, w: 32, h: 22, text: '', style: 'aisle', fontSize: 10, vertical: false },
+
+      // --- MIDDLE COLUMN: MAIN AISLES ---
+      { id: 'm1_l', x: 405, y: 65, w: 35, h: 60, text: 'PROTEIN DRINKS', style: 'endcap', fontSize: 7.5, vertical: true },
+      { id: 'm1_t', x: 440, y: 65, w: 175, h: 30, text: 'HBC', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'm1_b', x: 440, y: 95, w: 175, h: 30, text: 'HBC', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'm1_r', x: 615, y: 65, w: 35, h: 60, text: 'FIORA', style: 'shaded', fontSize: 8, vertical: true },
+      { id: 'm1_num', x: 655, y: 110, w: 20, h: 20, text: '3', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'm2_l', x: 405, y: 140, w: 35, h: 60, text: 'ALANI NU\nCOOLER', style: 'endcap', fontSize: 7.5, vertical: true },
+      { id: 'm2_t', x: 440, y: 140, w: 175, h: 30, text: 'HBC', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'm2_b', x: 440, y: 170, w: 175, h: 30, text: 'HBC', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'm2_r', x: 615, y: 140, w: 35, h: 60, text: 'KLEENEX', style: 'shaded', fontSize: 8, vertical: true },
+      { id: 'm2_num', x: 655, y: 185, w: 20, h: 20, text: '5', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'melt_salt', x: 695, y: 65, w: 75, h: 135, text: 'MELTING SALT AND\nDURAFLAME', style: 'shaded', fontSize: 10, vertical: true },
+      { id: 'melt_num', x: 775, y: 185, w: 22, h: 20, text: '15', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'm3_l', x: 405, y: 220, w: 35, h: 65, text: 'WATER STATION', style: 'endcap', fontSize: 7.5, vertical: true },
+      { id: 'm3_t', x: 440, y: 220, w: 295, h: 32.5, text: 'TOILET PAPER', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'm3_b', x: 440, y: 252.5, w: 295, h: 32.5, text: 'CLEANING CHEMICALS', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'm3_r', x: 735, y: 220, w: 35, h: 65, text: 'HONEYDEW\nCANDLES', style: 'shaded', fontSize: 7.5, vertical: true },
+      { id: 'm3_num', x: 775, y: 270, w: 20, h: 20, text: '6', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'm4_l', x: 405, y: 300, w: 35, h: 65, text: 'SPARKLING ICE', style: 'endcap', fontSize: 7.5, vertical: true },
+      { id: 'm4_t', x: 440, y: 300, w: 295, h: 32.5, text: 'LAUNDRY DETERGENT', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'm4_b', x: 440, y: 332.5, w: 295, h: 32.5, text: 'SODA', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'm4_r', x: 735, y: 300, w: 35, h: 65, text: 'DRIZZLICIOUS', style: 'shaded', fontSize: 7.5, vertical: true },
+      { id: 'm4_num', x: 775, y: 350, w: 20, h: 20, text: '7', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'm5_l', x: 405, y: 380, w: 35, h: 65, text: 'COKE 12 PACKS', style: 'endcap', fontSize: 7.5, vertical: true },
+      { id: 'm5_t', x: 440, y: 380, w: 295, h: 32.5, text: 'GATORADE AND SPARKLING', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'm5_b', x: 440, y: 412.5, w: 295, h: 32.5, text: 'CHIPS', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'm5_r', x: 735, y: 380, w: 35, h: 65, text: 'SALSA ROSE', style: 'shaded', fontSize: 7.5, vertical: true },
+      { id: 'm5_num', x: 775, y: 430, w: 20, h: 20, text: '8', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'm6_l', x: 405, y: 475, w: 35, h: 65, text: 'CHEX CEREAL', style: 'endcap', fontSize: 7.5, vertical: true },
+      { id: 'm6_t', x: 440, y: 475, w: 295, h: 32.5, text: 'CHIPS', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'm6_b', x: 440, y: 507.5, w: 295, h: 32.5, text: 'COFFEE', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'm6_r', x: 735, y: 475, w: 35, h: 65, text: 'CREETONE\nKETTLE CHIPS', style: 'shaded', fontSize: 7.5, vertical: true },
+      { id: 'm6_num', x: 775, y: 525, w: 20, h: 20, text: '9', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'm7_l', x: 405, y: 575, w: 35, h: 65, text: 'WESTMINSTER\nCRACKERS', style: 'endcap', fontSize: 7, vertical: true },
+      { id: 'm7_t', x: 440, y: 575, w: 295, h: 32.5, text: 'CEREAL', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'm7_b', x: 440, y: 607.5, w: 295, h: 32.5, text: 'COOKIES', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'm7_r', x: 735, y: 575, w: 35, h: 65, text: 'BACK TO\nNATURE\nCRACKERS', style: 'shaded', fontSize: 7, vertical: true },
+      { id: 'm7_num', x: 775, y: 625, w: 22, h: 20, text: '10', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'm8_l', x: 405, y: 655, w: 35, h: 65, text: 'BETTY CROCKER', style: 'endcap', fontSize: 7.5, vertical: true },
+      { id: 'm8_t', x: 440, y: 655, w: 295, h: 32.5, text: 'CRACKERS', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'm8_b', x: 440, y: 687.5, w: 295, h: 32.5, text: 'BAKING', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'm8_r', x: 735, y: 655, w: 35, h: 65, text: 'UTZ HOLIDAY\nPRETZELS', style: 'shaded', fontSize: 7.5, vertical: true },
+      { id: 'm8_num', x: 775, y: 705, w: 22, h: 20, text: '11', style: 'badge', fontSize: 10, vertical: false },
+
+      // --- BOTTOM MIDDLE DISPLAY TABLES ---
+      { id: 'disp_rot', x: 435, y: 790, w: 60, h: 55, text: 'ROTISSERIE\nUNIT', style: 'shaded', fontSize: 8.5, vertical: false, rotation: -45 },
+      { id: 'disp_bak1', x: 560, y: 795, w: 60, h: 45, text: 'BAKERY\nCINNAMON\nROLLS', style: 'shaded', fontSize: 8, vertical: false },
+      { id: 'disp_bak2', x: 620, y: 795, w: 30, h: 45, text: 'BAKERY\nCHEESECAKE', style: 'shaded', fontSize: 6.5, vertical: true },
+      { id: 'disp_bak_num', x: 655, y: 825, w: 22, h: 20, text: '13', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'disp_prod', x: 730, y: 745, w: 105, h: 55, text: 'PRODUCE TABLES BACK TO\nBACK\nPIE CENTER ON THE FRONT\nTABLE', style: 'shaded', fontSize: 7.5, vertical: false, rotation: -55 },
+      { id: 'disp_pie', x: 685, y: 805, w: 45, h: 45, text: 'APPLE PIES\nDONUTS', style: 'shaded', fontSize: 7.5, vertical: false, rotation: -55 },
+      { id: 'disp_pie_num', x: 715, y: 850, w: 22, h: 20, text: '15', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'disp_beef', x: 760, y: 800, w: 45, h: 45, text: 'BEEFHOUSE\nROLL RACKS', style: 'shaded', fontSize: 7.5, vertical: false, rotation: -55 },
+      { id: 'disp_beef_num', x: 790, y: 845, w: 22, h: 20, text: '14', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'floral_b', x: 650, y: 888, w: 210, h: 30, text: 'FLORAL BOUQUETS', style: 'aisle', fontSize: 10, vertical: false },
+      { id: 'floral_num', x: 865, y: 900, w: 22, h: 20, text: '15', style: 'badge', fontSize: 10, vertical: false },
+
+      // --- RIGHT SIDE: VERTICAL DISPLAYS, CANDY GRID, CART ROOM ---
+      { id: 'r1_1l', x: 845, y: 205, w: 30, h: 65, text: 'ELIMI', style: 'endcap', fontSize: 8, vertical: true },
+      { id: 'r1_1r', x: 875, y: 205, w: 22, h: 65, text: 'CHRISTMAS CANDY', style: 'shaded', fontSize: 7, vertical: true },
+
+      { id: 'r1_2l', x: 845, y: 315, w: 30, h: 65, text: 'APPLIANCES', style: 'endcap', fontSize: 8, vertical: true },
+      { id: 'r1_2r', x: 875, y: 315, w: 22, h: 65, text: 'CHRISTMAS CANDY', style: 'shaded', fontSize: 7, vertical: true },
+
+      { id: 'r1_3l', x: 845, y: 425, w: 30, h: 65, text: 'SKINNY MIX', style: 'endcap', fontSize: 8, vertical: true },
+      { id: 'r1_3r', x: 875, y: 425, w: 22, h: 65, text: 'SKINNY MIX', style: 'shaded', fontSize: 7, vertical: true },
+      { id: 'r1_num', x: 902, y: 472, w: 22, h: 20, text: '14', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'sb_1', x: 845, y: 555, w: 32, h: 48, text: 'BAKING & PANTRY', style: 'shaded', fontSize: 7, vertical: true },
+      { id: 'sb_2', x: 888, y: 545, w: 32, h: 52, text: 'CH SUGAR', style: 'shaded', fontSize: 7.5, vertical: true },
+      { id: 'sb_3', x: 845, y: 625, w: 32, h: 48, text: 'BAKING & PANTRY', style: 'shaded', fontSize: 7, vertical: true },
+      { id: 'sb_4', x: 888, y: 605, w: 32, h: 55, text: 'FISHERS NUTS', style: 'shaded', fontSize: 7.5, vertical: true },
+      { id: 'sb_5', x: 888, y: 668, w: 32, h: 55, text: 'GOLD MEDAL\nFLOUR', style: 'shaded', fontSize: 7.5, vertical: true },
+      { id: 'sb_num', x: 925, y: 705, w: 22, h: 20, text: '12', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'cg_1', x: 945, y: 195, w: 72, h: 42, text: 'CANDY  |  CHRISTMAS | SALT & CIDER', style: 'shaded', fontSize: 7, vertical: false },
+      { id: 'cg_2', x: 945, y: 237, w: 72, h: 42, text: 'CANDY  |  CHRISTMAS | SALT & CIDER', style: 'shaded', fontSize: 7, vertical: false },
+      { id: 'cg_3', x: 945, y: 279, w: 72, h: 42, text: 'CANDY  |  CHRISTMAS | SALT & CIDER', style: 'shaded', fontSize: 7, vertical: false },
+      { id: 'cg_4', x: 945, y: 321, w: 72, h: 42, text: 'CANDY  |  CHRISTMAS | SALT & CIDER', style: 'shaded', fontSize: 7, vertical: false },
+      { id: 'cg_5', x: 945, y: 363, w: 72, h: 42, text: 'CANDY  |  CHRISTMAS | SALT & CIDER', style: 'shaded', fontSize: 7, vertical: false },
+      { id: 'cg_6', x: 945, y: 405, w: 72, h: 42, text: 'CANDY  |  CHRISTMAS | SALT & CIDER', style: 'shaded', fontSize: 7, vertical: false },
+      { id: 'cg_7', x: 945, y: 447, w: 72, h: 42, text: 'CANDY  |  CHRISTMAS | SALT & CIDER', style: 'shaded', fontSize: 7, vertical: false },
+      { id: 'cg_num', x: 1022, y: 472, w: 22, h: 20, text: '15', style: 'badge', fontSize: 10, vertical: false },
+
+      { id: 'ferrero', x: 952, y: 498, w: 62, h: 62, text: 'FERRERO\nROCHER', style: 'circle', fontSize: 8.5, vertical: false, rotation: -30 },
+
+      { id: 'parm', x: 905, y: 810, w: 40, h: 75, text: 'PARMIGIANO\nREGGIANO', style: 'shaded', fontSize: 7.5, vertical: true, rotation: 30 },
+      { id: 'angl_box', x: 965, y: 805, w: 55, h: 30, text: '', style: 'shaded', fontSize: 8, vertical: false, rotation: 35 },
+      { id: 'san_pell', x: 960, y: 865, w: 135, h: 45, text: 'SAN PELLIGRINO WATERS', style: 'shaded', fontSize: 8.5, vertical: false },
+
+      { id: 'cart_room', x: 960, y: 675, w: 135, h: 110, text: 'CART ROOM', style: 'room', fontSize: 17, vertical: false },
+
+      { id: 'note_joolies', x: 1115, y: 475, w: 200, h: 75, text: 'JOOLIES\n\nmarshmallows/minis\nmarshmallow crème', style: 'note', fontSize: 11, vertical: false },
+      { id: 'note_broadway', x: 1125, y: 665, w: 255, h: 125, text: 'CART ROOM\n\nBROADWAY AREA\nKINGS HAWAIIAN ROLLS DISPLAYED AROUND THE LEAD DELI ISLAND\nTWO UPRIGHT RACKS OF BEEFHOUSE ROLLS\nCHEESECAKE COOLER\nLARGE TABLE OF CINNAMON AND PUMPKIN CINNAMON ROLLS', style: 'note', fontSize: 9, vertical: false },
+      { id: 'note_meat', x: 1125, y: 805, w: 255, h: 85, text: 'MEAT ALLEY\nITALIAN BEEF DISPLAY\nRACK OF BROTHS IN THE MIDDLE\nSTUFFING MIX AT THE END OF THE MEAT BUNKER', style: 'note', fontSize: 9, vertical: false }
+    ];
+
+    const DEFAULT_ARCH_ITEMS = [
+      { id: 'arch_bak', x: 165, y: 120, w: 150, h: 45, text: 'BAKERY PREP &\nCOOLERS', style: 'note', fontSize: 11, vertical: false },
+      { id: 'arch_meat', x: 400, y: 130, w: 210, h: 45, text: 'MEAT & SEAFOOD PREP', style: 'note', fontSize: 11, vertical: false },
+      { id: 'arch_dairy', x: 940, y: 160, w: 95, h: 35, text: 'DAIRY\nCOOLER', style: 'note', fontSize: 10, vertical: false },
+      { id: 'arch_froz', x: 1070, y: 135, w: 160, h: 45, text: 'FREEZER &\nBACKROOM', style: 'note', fontSize: 11, vertical: false },
+      { id: 'arch_deli', x: 225, y: 410, w: 130, h: 45, text: 'DELI / HOT FOODS\nPREP', style: 'note', fontSize: 11, vertical: false },
+      { id: 'arch_cafe', x: 215, y: 690, w: 185, h: 75, text: 'CAFE SEATING &\nCOFFEE KIOSK', style: 'aisle', fontSize: 11, vertical: false },
+      { id: 'arch_vest', x: 385, y: 848, w: 80, h: 32, text: 'VESTIBULE', style: 'note', fontSize: 9, vertical: false },
+      { id: 'arch_carts', x: 505, y: 848, w: 125, h: 32, text: 'SHOPPING CARTS', style: 'note', fontSize: 9, vertical: false },
+      { id: 'arch_prod_c', x: 712, y: 520, w: 60, h: 55, text: 'PRODUCE\nCOOLER', style: 'note', fontSize: 8.5, vertical: false },
+      { id: 'arch_cs', x: 712, y: 795, w: 90, h: 40, text: 'CUSTOMER\nSERVICE', style: 'note', fontSize: 9, vertical: false },
+      { id: 'arch_chk', x: 945, y: 760, w: 160, h: 30, text: 'CHECKOUT LANES', style: 'note', fontSize: 11, vertical: false },
+      { id: 'arch_pharm', x: 1200, y: 810, w: 78, h: 40, text: 'PHARMACY', style: 'note', fontSize: 9.5, vertical: false },
+
+      { id: 'arch_diag1', x: 515, y: 615, w: 65, h: 32, text: 'DISPLAY', style: 'aisle', fontSize: 8.5, vertical: false, rotation: 32 },
+      { id: 'arch_diag2', x: 595, y: 615, w: 65, h: 32, text: 'DISPLAY', style: 'aisle', fontSize: 8.5, vertical: false, rotation: 32 },
+      { id: 'arch_diag3', x: 505, y: 685, w: 65, h: 32, text: 'DISPLAY', style: 'aisle', fontSize: 8.5, vertical: false, rotation: 32 },
+      { id: 'arch_diag4', x: 585, y: 685, w: 65, h: 32, text: 'DISPLAY', style: 'aisle', fontSize: 8.5, vertical: false, rotation: 32 },
+      { id: 'arch_diag5', x: 560, y: 735, w: 65, h: 32, text: 'DISPLAY', style: 'aisle', fontSize: 8.5, vertical: false, rotation: 32 },
+      { id: 'arch_diag6', x: 485, y: 745, w: 65, h: 32, text: 'DISPLAY', style: 'aisle', fontSize: 8.5, vertical: false, rotation: 32 },
+
+      { id: 'arch_cl1', x: 525, y: 315, w: 135, h: 22, text: 'SPECIALTY / DELI', style: 'aisle', fontSize: 8.5, vertical: false },
+      { id: 'arch_cl2', x: 525, y: 355, w: 135, h: 22, text: 'BAKERY TABLES', style: 'aisle', fontSize: 8.5, vertical: false },
+      { id: 'arch_cl3', x: 525, y: 395, w: 135, h: 22, text: 'SEASONAL', style: 'aisle', fontSize: 8.5, vertical: false },
+      { id: 'arch_cl4', x: 505, y: 445, w: 185, h: 26, text: 'CHEESE / CHARCUTERIE', style: 'aisle', fontSize: 8.5, vertical: false },
+
+      { id: 'arch_va1', x: 750, y: 335, w: 22, h: 135, text: 'AISLE 1', style: 'aisle', fontSize: 8.5, vertical: true },
+      { id: 'arch_va2', x: 800, y: 275, w: 22, h: 195, text: 'AISLE 2', style: 'aisle', fontSize: 8.5, vertical: true },
+      { id: 'arch_va3', x: 850, y: 275, w: 22, h: 195, text: 'AISLE 3', style: 'aisle', fontSize: 8.5, vertical: true },
+      { id: 'arch_va4', x: 900, y: 275, w: 22, h: 195, text: 'AISLE 4', style: 'aisle', fontSize: 8.5, vertical: true },
+      { id: 'arch_va5', x: 960, y: 275, w: 26, h: 145, text: 'BUNKER A', style: 'shaded', fontSize: 8, vertical: true },
+      { id: 'arch_va6', x: 1055, y: 275, w: 26, h: 145, text: 'BUNKER B', style: 'shaded', fontSize: 8, vertical: true },
+      { id: 'arch_va7', x: 1125, y: 275, w: 28, h: 225, text: 'FROZEN 1', style: 'aisle', fontSize: 8.5, vertical: true },
+      { id: 'arch_va8', x: 1195, y: 275, w: 28, h: 225, text: 'FROZEN 2', style: 'aisle', fontSize: 8.5, vertical: true },
+
+      { id: 'arch_vb1', x: 850, y: 530, w: 22, h: 205, text: 'AISLE 5', style: 'aisle', fontSize: 8.5, vertical: true },
+      { id: 'arch_vb2', x: 905, y: 530, w: 22, h: 205, text: 'AISLE 6', style: 'aisle', fontSize: 8.5, vertical: true },
+      { id: 'arch_vb3', x: 960, y: 530, w: 22, h: 205, text: 'AISLE 7', style: 'aisle', fontSize: 8.5, vertical: true },
+      { id: 'arch_vb4', x: 1015, y: 530, w: 22, h: 205, text: 'AISLE 8', style: 'aisle', fontSize: 8.5, vertical: true },
+      { id: 'arch_vb5', x: 1070, y: 530, w: 22, h: 205, text: 'AISLE 9', style: 'aisle', fontSize: 8.5, vertical: true },
+      { id: 'arch_vb6', x: 1125, y: 530, w: 22, h: 205, text: 'AISLE 10', style: 'aisle', fontSize: 8.5, vertical: true },
+      { id: 'arch_vb7', x: 1180, y: 530, w: 22, h: 205, text: 'AISLE 11', style: 'aisle', fontSize: 8.5, vertical: true },
+      { id: 'arch_vb8', x: 1235, y: 530, w: 22, h: 205, text: 'DAIRY WALL', style: 'aisle', fontSize: 8.5, vertical: true }
+    ];
+
+    // =========================================================================
+    // APPLICATION STATE
+    // =========================================================================
+    const STORAGE_KEY = 'store_layout_editor_v2';   // same key as before, so saved edits carry over
+    const HINT_KEY = 'store_layout_hint_v1';
+    const CANVAS_W = 1400, CANVAS_H = 980;
+    const GRID = 10;
+    const ZMIN = 0.15, ZMAX = 2.5;
+    const STYLES = ['aisle', 'shaded', 'endcap', 'circle', 'note', 'badge', 'room'];
+    const VIEW_NAMES = { aisle: 'Aisle Map', arch: 'Blueprint' };
+
+    const $ = (id) => document.getElementById(id);
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const clone = (o) => JSON.parse(JSON.stringify(o));
+
+    let currentMode = 'aisle';        // 'aisle' | 'arch'
+    let interactionMode = 'edit';     // 'edit' (safe) | 'move'
+    let searchQuery = '';
+    let layouts = { aisle: clone(DEFAULT_AISLE_ITEMS), arch: clone(DEFAULT_ARCH_ITEMS) };
+    let selectedId = null;
+    let snapToGrid = true;
+    let zoomLevel = 0.75;
+    let userZoomed = false;
+    const PREFS_KEY = 'store_layout_prefs_v1';
+    const TEXT_SIZES = [['Normal', 1], ['Large', 1.3], ['Extra large', 1.6]];
+    let textSizeIdx = 1;
+    let lastPointerType = 'mouse';
+    let inspectorForm = null;
+    const undoStacks = { aisle: { undo: [], redo: [] }, arch: { undo: [], redo: [] } };
+    const elMap = new Map();
+
+    function isMobileViewport() { return window.innerWidth < 1024; }
+
+    // =========================================================================
+    // INIT & STORAGE
+    // =========================================================================
+    function init() {
+      buildInspectorForm();
+      loadFromStorage();
+      loadPrefs();
+      updateSnapUI();
+      setInteractionMode('edit');
+      applyTextScale(false);
+      renderCanvas();
+      updateHistoryButtons();
+      initialView();
+      setupGlobalListeners();
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAllText);
+      updateInspector();
+      if (navigator.share && navigator.canShare) $('btn-share').hidden = false;
+      showHintOnce();
+    }
+
+    function buildInspectorForm() {
+      const tpl = $('inspector-form-template');
+      inspectorForm = tpl.content.firstElementChild.cloneNode(true);
+      // press-and-hold repeat on the nudge arrows
+      inspectorForm.querySelectorAll('#nudge-pad button').forEach((btn) => {
+        const dx = +btn.dataset.dx, dy = +btn.dataset.dy;
+        let t1 = null, t2 = null;
+        const stop = () => { clearTimeout(t1); clearInterval(t2); t1 = t2 = null; };
+        btn.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          nudgeSelected(dx, dy);
+          stop();
+          t1 = setTimeout(() => { t2 = setInterval(() => nudgeSelected(dx, dy), 60); }, 380);
+        });
+        ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => btn.addEventListener(ev, stop));
+        btn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); nudgeSelected(dx, dy); } });
+      });
+    }
+
+    function sanitizeItems(arr, fallback) {
+      if (!Array.isArray(arr)) return clone(fallback);
+      const seen = new Set();
+      const out = [];
+      const num = (v, d) => (v !== null && v !== '' && Number.isFinite(+v) ? +v : d);
+      arr.forEach((raw, i) => {
+        if (!raw || typeof raw !== 'object') return;
+        let id = String(raw.id || ('item_' + i));
+        while (seen.has(id)) id += '_';
+        seen.add(id);
+        const it = {
+          id,
+          x: num(raw.x, 0), y: num(raw.y, 0),
+          w: Math.max(8, num(raw.w, 40)), h: Math.max(8, num(raw.h, 30)),
+          text: typeof raw.text === 'string' ? raw.text : '',
+          style: STYLES.includes(raw.style) ? raw.style : 'aisle',
+          fontSize: num(raw.fontSize, 10),
+          vertical: !!raw.vertical
+        };
+        if (raw.rotation) it.rotation = num(raw.rotation, 0);
+        out.push(it);
+      });
+      return out;
+    }
+
+    function loadFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed.aisle)) layouts.aisle = sanitizeItems(parsed.aisle, DEFAULT_AISLE_ITEMS);
+          if (Array.isArray(parsed.arch)) layouts.arch = sanitizeItems(parsed.arch, DEFAULT_ARCH_ITEMS);
+          if (parsed.currentMode === 'aisle' || parsed.currentMode === 'arch') currentMode = parsed.currentMode;
+        }
+      } catch (e) {
+        console.warn('Could not load saved layout:', e);
+      }
+      updateTabUI();
+    }
+
+    function saveToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentMode, aisle: layouts.aisle, arch: layouts.arch }));
+      } catch (e) {
+        console.warn('Storage error:', e);
+      }
+    }
+
+    // =========================================================================
+    // UNDO / REDO
+    // =========================================================================
+    function pushHistory() {
+      const s = undoStacks[currentMode];
+      s.undo.push(JSON.stringify(layouts[currentMode]));
+      if (s.undo.length > 60) s.undo.shift();
+      s.redo = [];
+      updateHistoryButtons();
+    }
+
+    function restoreSnapshot(json) {
+      layouts[currentMode] = JSON.parse(json);
+      if (!getItem(selectedId)) selectedId = null;
+      saveToStorage();
+      renderCanvas();
+      updateInspector();
+      updateHistoryButtons();
+    }
+
+    function undo() {
+      const s = undoStacks[currentMode];
+      if (!s.undo.length) return;
+      s.redo.push(JSON.stringify(layouts[currentMode]));
+      restoreSnapshot(s.undo.pop());
+      showToast('Undid last change');
+    }
+
+    function redo() {
+      const s = undoStacks[currentMode];
+      if (!s.redo.length) return;
+      s.undo.push(JSON.stringify(layouts[currentMode]));
+      restoreSnapshot(s.redo.pop());
+      showToast('Redid change');
+    }
+
+    function updateHistoryButtons() {
+      const s = undoStacks[currentMode];
+      $('btn-undo').disabled = s.undo.length === 0;
+      $('btn-redo').disabled = s.redo.length === 0;
+    }
+
+    // =========================================================================
+    // MODES & VIEW SWITCHING
+    // =========================================================================
+    function setInteractionMode(mode) {
+      interactionMode = mode;
+      $('items-layer').dataset.mode = mode;
+      document.querySelectorAll('[data-mode-btn]').forEach((b) => {
+        const on = b.dataset.modeBtn === mode;
+        b.classList.toggle('is-active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    }
+
+    function switchMode(mode) {
+      if (currentMode === mode) return;
+      currentMode = mode;
+      selectedId = null;
+      closeAllSheets();
+      updateTabUI();
+      saveToStorage();
+      renderCanvas();
+      updateInspector();
+      updateHistoryButtons();
+      if (searchQuery) handleSearch(searchQuery);
+    }
+
+    function updateTabUI() {
+      const isAisle = currentMode === 'aisle';
+      $('tab-aisle').classList.toggle('is-active', isAisle);
+      $('tab-arch').classList.toggle('is-active', !isAisle);
+      $('tab-aisle').setAttribute('aria-selected', isAisle ? 'true' : 'false');
+      $('tab-arch').setAttribute('aria-selected', isAisle ? 'false' : 'true');
+      $('arch-backdrop').toggleAttribute('hidden', isAisle);
+      $('print-title').textContent = 'Harvest Market • Springfield, IL — ' + VIEW_NAMES[currentMode];
+    }
+
+    // =========================================================================
+    // RENDERING
+    // =========================================================================
+    function getItem(id) { return id ? layouts[currentMode].find((i) => i.id === id) : undefined; }
+
+    function renderCanvas() {
+      const layer = $('items-layer');
+      layer.textContent = '';
+      elMap.clear();
+      const frag = document.createDocumentFragment();
+      layouts[currentMode].forEach((item, i) => {
+        const el = buildItemEl(item, i);
+        elMap.set(item.id, el);
+        frag.appendChild(el);
+      });
+      layer.appendChild(frag);
+      fitAllText();
+    }
+
+    function buildItemEl(item, index) {
+      const el = document.createElement('div');
+      el.id = 'item-' + item.id;
+      el.setAttribute('role', 'button');
+
+      const label = document.createElement('div');
+      label.className = 'item-label';
+
+      const handle = document.createElement('div');
+      handle.className = 'resize-handle';
+      handle.title = 'Drag to resize';
+      handle.addEventListener('pointerdown', (e) => startResize(e, item.id));
+
+      el.append(label, handle);
+      el.addEventListener('pointerdown', (e) => onItemPointerDown(e, item.id));
+      el.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        if (lastPointerType === 'touch') return;
+        enableInlineEdit(item.id, el.firstChild);
+      });
+      el.addEventListener('contextmenu', (e) => { if (lastPointerType === 'touch') e.preventDefault(); });
+
+      syncItemEl(el, item, index);
+      return el;
+    }
+
+    function syncItemEl(el, item, index) {
+      const q = normQuery();
+      let cls = 'plan-item style-' + (item.style || 'aisle');
+      if (item.id === selectedId) cls += ' selected';
+      if (q) cls += itemMatches(item, q) ? ' search-match' : ' search-dimmed';
+      el.className = cls;
+
+      el.style.left = item.x + 'px';
+      el.style.top = item.y + 'px';
+      el.style.width = item.w + 'px';
+      el.style.height = item.h + 'px';
+      el.style.setProperty('--fs', (item.fontSize || 10) + 'px');
+      el.style.zIndex = item.style === 'note' ? 15 : 20 + index;
+      el.style.transform = item.rotation ? 'rotate(' + item.rotation + 'deg)' : '';
+
+      const label = el.firstChild;
+      label.className = 'item-label' + (item.vertical ? ' vertical-text' : '');
+      if (!label.isContentEditable && label.textContent !== item.text) label.textContent = item.text;
+      el.setAttribute('aria-label', (item.text || 'Unlabeled item').replace(/\n/g, ' '));
+    }
+
+    function refreshItem(item) {
+      const el = elMap.get(item.id);
+      if (!el) { renderCanvas(); return; }
+      syncItemEl(el, item, layouts[currentMode].indexOf(item));
+      fitText(el);
+    }
+
+    function setSelectedClass() {
+      elMap.forEach((el, id) => el.classList.toggle('selected', id === selectedId));
+    }
+
+    // =========================================================================
+    // TEXT SIZE (bigger, crisper map words) — shrinks a label only if it would overflow its box
+    // =========================================================================
+    function fitText(el) {
+      const lab = el.firstChild;
+      if (!lab || lab.isContentEditable) return;
+      el.style.setProperty('--fit', '1');
+      if (!lab.textContent) return;
+      const ts = TEXT_SIZES[textSizeIdx][1];
+      const floor = Math.min(1, 0.9 / ts);   // never smaller than ~your original size
+      const over = () => lab.scrollHeight > lab.clientHeight + 1 || lab.scrollWidth > lab.clientWidth + 1;
+      let f = 1;
+      // Measure with word-breaking off so a word that won't fit shrinks the text instead of splitting.
+      lab.style.wordBreak = 'normal';
+      lab.style.overflowWrap = 'normal';
+      while (over() && f > floor) {
+        f = Math.max(floor, +(f - 0.04).toFixed(3));
+        el.style.setProperty('--fit', f);
+      }
+      lab.style.wordBreak = '';
+      lab.style.overflowWrap = '';
+    }
+
+    function fitAllText() { elMap.forEach((el) => fitText(el)); }
+
+    function loadPrefs() {
+      try {
+        const p = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
+        if (Number.isInteger(p.textSizeIdx) && TEXT_SIZES[p.textSizeIdx]) textSizeIdx = p.textSizeIdx;
+      } catch (e) { /* ignore */ }
+    }
+
+    function applyTextScale(refit) {
+      const [name, scale] = TEXT_SIZES[textSizeIdx];
+      $('floor-canvas').style.setProperty('--ts', scale);
+      $('btn-text').textContent = 'Text: ' + name;
+      document.querySelectorAll('[data-text-label]').forEach((el) => { el.textContent = 'Text size: ' + name; });
+      if (refit) fitAllText();
+    }
+
+    function cycleTextSize() {
+      textSizeIdx = (textSizeIdx + 1) % TEXT_SIZES.length;
+      try { localStorage.setItem(PREFS_KEY, JSON.stringify({ textSizeIdx })); } catch (e) { /* ignore */ }
+      applyTextScale(true);
+      showToast('Text size: ' + TEXT_SIZES[textSizeIdx][0]);
+    }
+
+    // Phones start zoomed in enough to read; larger screens start fitted to the window.
+    function initialView() {
+      if (window.innerWidth < 600) {
+        userZoomed = true;
+        setZoom(0.5, { x: 0, y: 0, cx: 0, cy: 0 });
+        const wr = $('workspace');
+        wr.scrollLeft = 0; wr.scrollTop = 0;
+      } else {
+        fitCanvasToScreen();
+      }
+    }
+
+    // =========================================================================
+    // SEARCH
+    // =========================================================================
+    function normText(s) { return String(s || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+    function normQuery() { return normText(searchQuery); }
+    function itemMatches(item, q) { return normText(item.text).includes(q); }
+
+    function regionOf(it) {
+      const cx = it.x + it.w / 2, cy = it.y + it.h / 2;
+      const col = cx < 370 ? 'Left' : cx < 800 ? 'Center' : 'Right';
+      const row = cy < 330 ? 'Back' : cy < 660 ? 'Middle' : 'Front';
+      return row + ' · ' + col;
+    }
+
+    function applySearchClasses() {
+      const q = normQuery();
+      layouts[currentMode].forEach((item) => {
+        const el = elMap.get(item.id);
+        if (!el) return;
+        const m = q && itemMatches(item, q);
+        el.classList.toggle('search-match', !!m);
+        el.classList.toggle('search-dimmed', !!q && !m);
+      });
+    }
+
+    function handleSearch(val) {
+      searchQuery = val || '';
+      const q = normQuery();
+      const popover = $('search-results-popover');
+      const pill = $('search-match-pill');
+      $('clear-search-btn').hidden = !searchQuery;
+      applySearchClasses();
+
+      if (!q) { popover.hidden = true; pill.hidden = true; return; }
+
+      const matches = layouts[currentMode].filter((i) => itemMatches(i, q));
+      pill.textContent = matches.length + (matches.length === 1 ? ' match' : ' matches');
+      pill.hidden = false;
+
+      if (!matches.length) {
+        popover.innerHTML = '<div class="popover-empty">No matches for “' + escapeHtml(searchQuery) + '”</div>';
+        popover.hidden = false;
+        return;
+      }
+      popover.innerHTML = matches.slice(0, 20).map((m) => {
+        const label = (m.text || '(Unlabeled)').replace(/\n/g, ' • ');
+        return '<button class="result" onclick="focusItem(\'' + escapeHtml(m.id) + '\')">' +
+          '<span class="result-label">' + escapeHtml(label) + '</span>' +
+          '<span class="result-area">' + regionOf(m) + '</span></button>';
+      }).join('');
+      popover.hidden = false;
+    }
+
+    function onSearchKey(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const q = normQuery();
+        const first = q && layouts[currentMode].find((i) => itemMatches(i, q));
+        if (first) { focusItem(first.id); e.target.blur(); }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        if (searchQuery) clearSearch(); else e.target.blur();
+      }
+    }
+
+    function clearSearch() {
+      $('quick-search-input').value = '';
+      searchQuery = '';
+      $('clear-search-btn').hidden = true;
+      $('search-results-popover').hidden = true;
+      $('search-match-pill').hidden = true;
+      applySearchClasses();
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, (s) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s]));
+    }
+
+    // Zoom to the item (if the map is zoomed way out), center it, and flash it.
+    function focusItem(itemId) {
+      const item = getItem(itemId);
+      if (!item) return;
+      $('search-results-popover').hidden = true;
+      closeAllSheets();
+      if (!isMobileViewport()) { selectedId = itemId; setSelectedClass(); updateInspector(); }
+
+      const target = Math.max(zoomLevel, isMobileViewport() ? 0.9 : 0.6);
+      if (target !== zoomLevel) { setZoom(target); userZoomed = true; }
+
+      requestAnimationFrame(() => {
+        const el = elMap.get(itemId);
+        if (!el) return;
+        const wr = $('workspace');
+        const w = wr.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        wr.scrollBy({
+          left: (r.left + r.width / 2) - (w.left + w.width / 2),
+          top: (r.top + r.height / 2) - (w.top + w.height * 0.42),
+          behavior: 'smooth'
+        });
+        el.classList.remove('pulse');
+        void el.offsetWidth;
+        el.classList.add('pulse');
+        setTimeout(() => el.classList.remove('pulse'), 2800);
+      });
+    }
+
+    // =========================================================================
+    // POINTER INTERACTIONS (tap / drag / resize) — one code path for mouse, touch, pen
+    // =========================================================================
+    const TAP_SLOP = 9;
+    const DRAG_SLOP_TOUCH = 6, DRAG_SLOP_MOUSE = 3;
+    let interaction = { type: null };
+    let tapCandidate = null;   // touch tap on an unselected item (selects on release)
+    let bgTap = null;          // tap on empty canvas
+    let lastBgTap = null;      // for double-tap zoom
+
+    const isPrecise = (e) => e.pointerType === 'mouse' || e.pointerType === 'pen';
+
+    function onItemPointerDown(e, id) {
+      lastPointerType = e.pointerType;
+      if (!e.isPrimary) return;
+      if (e.target.isContentEditable) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      e.stopPropagation();
+
+      const item = getItem(id);
+      if (!item) return;
+      const wasSelected = selectedId === id;
+      const precise = isPrecise(e);
+
+      if (interactionMode === 'move') {
+        selectItem(id, false);
+        beginDrag(e, item, !precise);          // tap (no drag) opens the sheet on touch
+        return;
+      }
+
+      // Edit mode: select first, then drag the selected item.
+      if (precise) {
+        selectItem(id, false);
+        if (wasSelected) beginDrag(e, item, false);
+      } else if (wasSelected) {
+        beginDrag(e, item, true);
+      } else {
+        tapCandidate = { id, x: e.clientX, y: e.clientY, moved: false };
+      }
+    }
+
+    function beginDrag(e, item, opensSheet) {
+      interaction = {
+        type: 'drag', id: item.id, pid: e.pointerId,
+        startX: e.clientX, startY: e.clientY, origX: item.x, origY: item.y,
+        moved: false, opensSheet, slop: isPrecise(e) ? DRAG_SLOP_MOUSE : DRAG_SLOP_TOUCH
+      };
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    }
+
+    function startResize(e, itemId) {
+      lastPointerType = e.pointerType;
+      e.stopPropagation();
+      e.preventDefault();
+      if (!e.isPrimary) return;
+      const item = getItem(itemId);
+      if (!item) return;
+      selectItem(itemId, false);
+      interaction = {
+        type: 'resize', id: itemId, pid: e.pointerId,
+        startX: e.clientX, startY: e.clientY, origW: item.w, origH: item.h, rot: item.rotation || 0,
+        moved: false, opensSheet: false, slop: DRAG_SLOP_MOUSE
+      };
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    }
+
+    function onPointerMove(e) {
+      if (tapCandidate && Math.hypot(e.clientX - tapCandidate.x, e.clientY - tapCandidate.y) > TAP_SLOP) tapCandidate.moved = true;
+      if (bgTap && Math.hypot(e.clientX - bgTap.x, e.clientY - bgTap.y) > TAP_SLOP) bgTap.moved = true;
+
+      if (!interaction.type || e.pointerId !== interaction.pid) return;
+      const item = getItem(interaction.id);
+      if (!item) return;
+
+      const dx = (e.clientX - interaction.startX) / zoomLevel;
+      const dy = (e.clientY - interaction.startY) / zoomLevel;
+
+      if (!interaction.moved) {
+        if (Math.abs(dx * zoomLevel) <= interaction.slop && Math.abs(dy * zoomLevel) <= interaction.slop) return;
+        pushHistory();
+        interaction.moved = true;
+      }
+
+      const el = elMap.get(item.id);
+      if (!el) return;
+
+      if (interaction.type === 'drag') {
+        let nx = interaction.origX + dx;
+        let ny = interaction.origY + dy;
+        if (snapToGrid) { nx = Math.round(nx / GRID) * GRID; ny = Math.round(ny / GRID) * GRID; }
+        item.x = clamp(nx, 0, CANVAS_W - item.w);
+        item.y = clamp(ny, 0, CANVAS_H - item.h);
+        el.style.left = item.x + 'px';
+        el.style.top = item.y + 'px';
+      } else {
+        // Convert the drag into the item's own (rotated) axes so the handle tracks the finger.
+        const rad = (interaction.rot * Math.PI) / 180;
+        const lx = dx * Math.cos(rad) + dy * Math.sin(rad);
+        const ly = -dx * Math.sin(rad) + dy * Math.cos(rad);
+        let nw = Math.max(16, interaction.origW + lx);
+        let nh = Math.max(16, interaction.origH + ly);
+        if (snapToGrid) { nw = Math.round(nw / GRID) * GRID; nh = Math.round(nh / GRID) * GRID; }
+        item.w = Math.max(16, nw);
+        item.h = Math.max(16, nh);
+        el.style.width = item.w + 'px';
+        el.style.height = item.h + 'px';
+      }
+      syncFormValues();
+    }
+
+    function onPointerUp(e) {
+      const isUp = e.type === 'pointerup';
+
+      if (tapCandidate && e.isPrimary) {
+        const t = tapCandidate;
+        tapCandidate = null;
+        if (isUp && !t.moved) selectItem(t.id, true);
+      }
+
+      if (bgTap && e.isPrimary) {
+        const t = bgTap;
+        bgTap = null;
+        if (isUp && !t.moved && t.type !== 'mouse') {
+          deselectAll();
+          const now = performance.now();
+          if (lastBgTap && now - lastBgTap.t < 320 && Math.hypot(t.x - lastBgTap.x, t.y - lastBgTap.y) < 36) {
+            lastBgTap = null;
+            if (zoomLevel < 0.75) setZoom(1, { x: t.x, y: t.y }); else fitCanvasToScreen();
+            userZoomed = true;
+          } else {
+            lastBgTap = { t: now, x: t.x, y: t.y };
+          }
+        }
+      }
+
+      if (interaction.type && e.pointerId === interaction.pid) {
+        if (interaction.moved) {
+          saveToStorage();
+          syncFormValues();
+        } else if (interaction.type === 'drag' && interaction.opensSheet && isUp) {
+          openEditSheet();
+        }
+        interaction = { type: null };
+      }
+    }
+
+    function onWorkspacePointerDown(e) {
+      lastPointerType = e.pointerType;
+      if (!e.isPrimary) return;
+      if (e.target.closest('.plan-item')) return;
+      const wr = $('workspace');
+      if (e.target === wr) {            // ignore clicks on the scrollbars
+        const r = wr.getBoundingClientRect();
+        if (e.clientX > r.left + wr.clientWidth || e.clientY > r.top + wr.clientHeight) return;
+      }
+      bgTap = { x: e.clientX, y: e.clientY, moved: false, type: e.pointerType };
+      if (e.pointerType === 'mouse') deselectAll();
+    }
+
+    // =========================================================================
+    // INLINE TEXT EDITING (desktop double-click)
+    // =========================================================================
+    function enableInlineEdit(itemId, labelDiv) {
+      selectItem(itemId, false);
+      labelDiv.contentEditable = 'true';
+      labelDiv.focus();
+      const range = document.createRange();
+      range.selectNodeContents(labelDiv);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      const finish = () => {
+        labelDiv.contentEditable = 'false';
+        labelDiv.removeEventListener('blur', finish);
+        labelDiv.removeEventListener('keydown', onKey);
+        const item = getItem(itemId);
+        const newText = labelDiv.innerText.replace(/\n$/, '');
+        if (item && item.text !== newText) {
+          pushHistory();
+          item.text = newText;
+          saveToStorage();
+        }
+        if (item) refreshItem(item);
+        updateInspector();
+      };
+      const onKey = (e) => {
+        if (e.key === 'Escape') { e.preventDefault(); labelDiv.blur(); }
+        e.stopPropagation();
+      };
+      labelDiv.addEventListener('blur', finish);
+      labelDiv.addEventListener('keydown', onKey);
+    }
+
+    // =========================================================================
+    // SELECTION, INSPECTOR & SHEETS
+    // =========================================================================
+    function selectItem(id, openSheetOnMobile) {
+      selectedId = id;
+      setSelectedClass();
+      updateInspector();
+      if (openSheetOnMobile && isMobileViewport()) openEditSheet();
+    }
+
+    function deselectAll() {
+      selectedId = null;
+      setSelectedClass();
+      updateInspector();
+      closeAllSheets();
+    }
+
+    function updateInspector() {
+      const item = getItem(selectedId);
+      const noSel = $('desktop-no-selection');
+      const desktopHost = $('inspector-form-host');
+      const sheetBody = $('edit-sheet-body');
+
+      if (!item) {
+        noSel.hidden = false;
+        if (inspectorForm.parentNode) inspectorForm.remove();
+        return;
+      }
+      noSel.hidden = true;
+      const host = isMobileViewport() ? sheetBody : desktopHost;
+      if (inspectorForm.parentNode !== host) host.appendChild(inspectorForm);
+      syncFormValues();
+      $('edit-sheet-name').textContent = (item.text || 'Unlabeled item').replace(/\n/g, ' ');
+    }
+
+    // Write item values into the form without clobbering the field being typed in.
+    function syncFormValues() {
+      const item = getItem(selectedId);
+      if (!item || !inspectorForm) return;
+      const set = (id, val) => {
+        const el = $(id);
+        if (el && document.activeElement !== el) el.value = val;
+      };
+      set('prop-text', item.text);
+      set('prop-style', item.style || 'aisle');
+      set('prop-fontSize', item.fontSize || 10);
+      set('prop-w', item.w);
+      set('prop-h', item.h);
+      set('prop-x', Math.round(item.x * 10) / 10);
+      set('prop-y', Math.round(item.y * 10) / 10);
+      $('prop-vertical').textContent = item.vertical ? 'Vertical' : 'Horizontal';
+      $('prop-rot-val').textContent = item.rotation || 0;
+    }
+
+    // ---- Sheets (phones & tablets) ----
+    const SHEET_IDS = ['edit-sheet', 'add-sheet', 'menu-sheet'];
+
+    function openSheet(id) {
+      SHEET_IDS.forEach((s) => { if (s !== id) setSheet(s, false); });
+      setSheet(id, true);
+      $('scrim').classList.toggle('show', id !== 'edit-sheet');
+      updateSheetMetrics();
+      if (id === 'menu-sheet') updateSnapUI();
+    }
+
+    function setSheet(id, open) {
+      const el = $(id);
+      el.classList.toggle('open', open);
+      el.setAttribute('aria-hidden', open ? 'false' : 'true');
+    }
+
+    function closeAllSheets() {
+      SHEET_IDS.forEach((s) => setSheet(s, false));
+      $('scrim').classList.remove('show');
+      updateSheetMetrics();
+    }
+
+    function updateSheetMetrics() {
+      const el = $('edit-sheet');
+      const h = el.classList.contains('open') ? el.offsetHeight : 0;
+      document.documentElement.style.setProperty('--sheet-h', h + 'px');
+      document.body.classList.toggle('edit-sheet-open', h > 0);
+    }
+
+    function openEditSheet() {
+      if (!isMobileViewport() || !getItem(selectedId)) return;
+      updateInspector();
+      openSheet('edit-sheet');
+      requestAnimationFrame(() => { updateSheetMetrics(); revealSelected(); });
+    }
+
+    // Make sure the selected item isn't hidden behind the sheet.
+    function revealSelected() {
+      const el = elMap.get(selectedId);
+      if (!el) return;
+      const wr = $('workspace');
+      const w = wr.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      const sheetH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sheet-h')) || 0;
+      const top = w.top + 8, bottom = w.bottom - sheetH - 14, left = w.left + 8, right = w.right - 8;
+      let dy = 0, dx = 0;
+      if (r.bottom > bottom) dy = r.bottom - bottom;
+      else if (r.top < top) dy = r.top - top;
+      if (r.right > right) dx = r.right - right;
+      else if (r.left < left) dx = r.left - left;
+      if (dx || dy) wr.scrollBy({ left: dx, top: dy, behavior: 'smooth' });
+    }
+
+    // =========================================================================
+    // EDITING ACTIONS
+    // =========================================================================
+    let propHistoryTimer = null;
+    function coalesceHistory() {
+      if (!propHistoryTimer) pushHistory();
+      clearTimeout(propHistoryTimer);
+      propHistoryTimer = setTimeout(() => { propHistoryTimer = null; }, 700);
+    }
+
+    function limitsFor(key, item) {
+      switch (key) {
+        case 'w': return [16, 1200];
+        case 'h': return [16, 900];
+        case 'fontSize': return [5, 48];
+        case 'x': return [0, Math.max(0, CANVAS_W - item.w)];
+        case 'y': return [0, Math.max(0, CANVAS_H - item.h)];
+        default: return [-Infinity, Infinity];
+      }
+    }
+
+    function updateSelectedProp(key, value) {
+      const item = getItem(selectedId);
+      if (!item) return;
+      coalesceHistory();
+      item[key] = value;
+      saveToStorage();
+      refreshItem(item);
+      if (key === 'text') $('edit-sheet-name').textContent = (value || 'Unlabeled item').replace(/\n/g, ' ');
+      syncFormValues();
+    }
+
+    function onNum(key, el) {
+      const item = getItem(selectedId);
+      if (!item) return;
+      const v = parseFloat(el.value);
+      if (Number.isNaN(v)) return;
+      const [lo, hi] = limitsFor(key, item);
+      updateSelectedProp(key, clamp(v, lo, hi));
+    }
+
+    function onNumCommit(key, el) {
+      const item = getItem(selectedId);
+      if (!item) return;
+      const [lo, hi] = limitsFor(key, item);
+      let v = parseFloat(el.value);
+      if (Number.isNaN(v)) v = item[key];
+      v = clamp(v, lo, hi);
+      if (v !== item[key]) updateSelectedProp(key, v);
+      el.value = v;
+    }
+
+    function nudgeSelected(dx, dy) {
+      const item = getItem(selectedId);
+      if (!item) return;
+      coalesceHistory();
+      item.x = clamp(item.x + dx, 0, CANVAS_W - item.w);
+      item.y = clamp(item.y + dy, 0, CANVAS_H - item.h);
+      saveToStorage();
+      refreshItem(item);
+      syncFormValues();
+    }
+
+    function applyQuickLabel(labelText) {
+      const item = getItem(selectedId);
+      if (!item) return;
+      pushHistory();
+      item.text = labelText;
+      saveToStorage();
+      refreshItem(item);
+      updateInspector();
+      showToast('Updated label');
+    }
+
+    function clearSelectedText() {
+      const item = getItem(selectedId);
+      if (!item) return;
+      pushHistory();
+      item.text = '';
+      saveToStorage();
+      refreshItem(item);
+      updateInspector();
+      $('prop-text').focus();
+    }
+
+    function toggleSelectedVertical() {
+      const item = getItem(selectedId);
+      if (!item) return;
+      pushHistory();
+      item.vertical = !item.vertical;
+      saveToStorage();
+      refreshItem(item);
+      syncFormValues();
+    }
+
+    function setSelectedRotation(deg) {
+      const item = getItem(selectedId);
+      if (!item) return;
+      pushHistory();
+      item.rotation = deg;
+      saveToStorage();
+      refreshItem(item);
+      syncFormValues();
+    }
+
+    function rotateSelectedBy(delta) {
+      const item = getItem(selectedId);
+      if (!item) return;
+      pushHistory();
+      item.rotation = (((item.rotation || 0) + delta) % 360 + 360) % 360;
+      if (item.rotation > 180) item.rotation -= 360;
+      saveToStorage();
+      refreshItem(item);
+      syncFormValues();
+    }
+
+    // =========================================================================
+    // ADD / DUPLICATE / DELETE
+    // =========================================================================
+    function newId() { return 'item_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+    function addNewItem(presetType) {
+      pushHistory();
+      const wr = $('workspace').getBoundingClientRect();
+      const cr = $('floor-canvas').getBoundingClientRect();
+      const vx = (wr.left + wr.width * 0.5 - cr.left) / zoomLevel;
+      const vy = (wr.top + wr.height * 0.35 - cr.top) / zoomLevel;
+
+      const id = newId();
+      const item = { id, x: 0, y: 0, w: 180, h: 36, text: 'NEW AISLE', style: 'aisle', fontSize: 10, vertical: false, rotation: 0 };
+      if (presetType === 'endcap') Object.assign(item, { w: 36, h: 75, text: 'ENDCAP', style: 'endcap', fontSize: 8, vertical: true });
+      else if (presetType === 'angled') Object.assign(item, { w: 65, h: 45, text: 'DISPLAY\nTABLE', style: 'shaded', fontSize: 8, rotation: -45 });
+      else if (presetType === 'badge') Object.assign(item, { w: 24, h: 22, text: '16', style: 'badge', fontSize: 10 });
+      else if (presetType === 'note') Object.assign(item, { w: 180, h: 50, text: 'NEW NOTE / SECTION', style: 'note', fontSize: 10 });
+
+      item.x = clamp(Math.round((vx - item.w / 2) / GRID) * GRID, 0, CANVAS_W - item.w);
+      item.y = clamp(Math.round((vy - item.h / 2) / GRID) * GRID, 0, CANVAS_H - item.h);
+
+      layouts[currentMode].push(item);
+      saveToStorage();
+      renderCanvas();
+      selectItem(id, true);
+      showToast('Added new item');
+    }
+
+    function duplicateSelected() {
+      const item = getItem(selectedId);
+      if (!item) return;
+      pushHistory();
+      const copy = clone(item);
+      copy.id = newId();
+      copy.x = Math.min(CANVAS_W - item.w, item.x + 20);
+      copy.y = Math.min(CANVAS_H - item.h, item.y + 20);
+      layouts[currentMode].push(copy);
+      saveToStorage();
+      renderCanvas();
+      selectItem(copy.id, false);
+      showToast('Duplicated item');
+    }
+
+    function deleteSelected() {
+      if (!selectedId) return;
+      pushHistory();
+      layouts[currentMode] = layouts[currentMode].filter((i) => i.id !== selectedId);
+      selectedId = null;
+      saveToStorage();
+      renderCanvas();
+      updateInspector();
+      closeAllSheets();
+      showToast('Deleted item', { action: { label: 'Undo', run: undo }, duration: 4000 });
+    }
+
+    // =========================================================================
+    // ZOOM, SNAP, RESET, SAVE/LOAD, PRINT
+    // =========================================================================
+    function visibleCenter() {
+      const r = $('workspace').getBoundingClientRect();
+      const sheetH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sheet-h')) || 0;
+      return { x: r.left + r.width / 2, y: r.top + (r.height - sheetH) / 2 };
+    }
+
+    // Set zoom; keep the canvas point under `anchor` (client coords) fixed on screen.
+    function setZoom(z, anchor) {
+      z = clamp(z, ZMIN, ZMAX);
+      const wr = $('workspace');
+      const canvas = $('floor-canvas');
+      anchor = anchor || visibleCenter();
+
+      let cx = anchor.cx, cy = anchor.cy;
+      if (cx === undefined) {
+        const r = canvas.getBoundingClientRect();
+        cx = (anchor.x - r.left) / zoomLevel;
+        cy = (anchor.y - r.top) / zoomLevel;
+      }
+
+      zoomLevel = z;
+      const sizer = $('canvas-sizer');
+      sizer.style.width = CANVAS_W * z + 'px';
+      sizer.style.height = CANVAS_H * z + 'px';
+      $('canvas-scaler').style.transform = 'scale(' + z + ')';
+      canvas.style.setProperty('--inv', Math.min(6, 1 / z).toFixed(3));
+      $('zoom-label').textContent = Math.round(z * 100) + '%';
+
+      const r2 = canvas.getBoundingClientRect();
+      wr.scrollLeft += r2.left + cx * z - anchor.x;
+      wr.scrollTop += r2.top + cy * z - anchor.y;
+    }
+
+    function zoomBy(factor) { userZoomed = true; setZoom(zoomLevel * factor); }
+
+    function fitCanvasToScreen() {
+      const wr = $('workspace');
+      const cs = getComputedStyle($('canvas-pad'));
+      const availW = wr.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const availH = wr.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      const z = clamp(Math.min(availW / CANVAS_W, availH / CANVAS_H), ZMIN, 1.2);
+      userZoomed = false;
+      setZoom(+z.toFixed(3));
+      wr.scrollLeft = 0;
+      wr.scrollTop = 0;
+    }
+
+    function updateSnapUI() {
+      const btn = $('btn-snap');
+      btn.textContent = 'Snap: ' + (snapToGrid ? 'ON' : 'OFF');
+      btn.classList.toggle('btn-soft-blue', snapToGrid);
+      $('floor-canvas').classList.toggle('canvas-grid', snapToGrid);
+      document.querySelectorAll('[data-snap-label]').forEach((el) => { el.textContent = 'Grid snap: ' + (snapToGrid ? 'ON' : 'OFF'); });
+    }
+
+    function toggleSnap() {
+      snapToGrid = !snapToGrid;
+      updateSnapUI();
+      showToast('Grid snap ' + (snapToGrid ? 'ON' : 'OFF'));
+    }
+
+    function confirmReset() {
+      $('reset-view-name').textContent = VIEW_NAMES[currentMode];
+      $('confirm-modal').hidden = false;
+    }
+    function closeConfirmModal() { $('confirm-modal').hidden = true; }
+
+    function executeReset() {
+      pushHistory();
+      layouts[currentMode] = clone(currentMode === 'aisle' ? DEFAULT_AISLE_ITEMS : DEFAULT_ARCH_ITEMS);
+      selectedId = null;
+      saveToStorage();
+      renderCanvas();
+      updateInspector();
+      closeAllSheets();
+      closeConfirmModal();
+      showToast('Restored default layout', { action: { label: 'Undo', run: undo }, duration: 4000 });
+    }
+
+    function layoutJSON() {
+      return JSON.stringify({ exportedAt: new Date().toISOString(), version: 2, aisle: layouts.aisle, arch: layouts.arch }, null, 2);
+    }
+    function layoutFileName() { return 'store-floor-plan-' + new Date().toISOString().slice(0, 10) + '.json'; }
+
+    function exportJSON() {
+      const blob = new Blob([layoutJSON()], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = layoutFileName();
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast('Saved layout backup');
+    }
+
+    async function shareLayout() {
+      try {
+        const file = new File([layoutJSON()], layoutFileName(), { type: 'application/json' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'Harvest Market floor plan' });
+        } else {
+          exportJSON();
+        }
+      } catch (e) {
+        if (e && e.name !== 'AbortError') exportJSON();
+      }
+    }
+
+    function importJSON(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (!Array.isArray(parsed.aisle) && !Array.isArray(parsed.arch)) { showToast('Invalid layout file'); return; }
+          const prev = { aisle: layouts.aisle, arch: layouts.arch };
+          if (Array.isArray(parsed.aisle)) { undoStacks.aisle.undo.push(JSON.stringify(prev.aisle)); undoStacks.aisle.redo = []; layouts.aisle = sanitizeItems(parsed.aisle, DEFAULT_AISLE_ITEMS); }
+          if (Array.isArray(parsed.arch)) { undoStacks.arch.undo.push(JSON.stringify(prev.arch)); undoStacks.arch.redo = []; layouts.arch = sanitizeItems(parsed.arch, DEFAULT_ARCH_ITEMS); }
+          selectedId = null;
+          saveToStorage();
+          renderCanvas();
+          updateInspector();
+          updateHistoryButtons();
+          showToast('Loaded layout file', { action: { label: 'Undo', run: () => { layouts.aisle = prev.aisle; layouts.arch = prev.arch; saveToStorage(); renderCanvas(); updateInspector(); } }, duration: 4000 });
+        } catch (err) {
+          showToast('Could not read that file');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function printCleanBW() {
+      deselectAll();
+      setTimeout(() => window.print(), 80);
+    }
+
+    // =========================================================================
+    // MODALS, DRAWER, TOAST
+    // =========================================================================
+    function toggleInfo() { const d = $('info-drawer'); d.hidden = !d.hidden; }
+    function openHelp() { $('help-modal').hidden = false; }
+    function closeHelp() { $('help-modal').hidden = true; }
+
+    function showToast(msg, opts) {
+      opts = opts || {};
+      const c = $('toast-container');
+      const t = document.createElement('div');
+      t.className = 'toast';
+      const s = document.createElement('span');
+      s.textContent = msg;
+      t.appendChild(s);
+      if (opts.action) {
+        const b = document.createElement('button');
+        b.textContent = opts.action.label;
+        b.onclick = () => { opts.action.run(); t.remove(); };
+        t.appendChild(b);
+      }
+      c.appendChild(t);
+      while (c.children.length > 3) c.firstChild.remove();
+      setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, opts.duration || 2000);
+    }
+
+    function showHintOnce() {
+      try {
+        if (!window.matchMedia('(pointer: coarse)').matches || localStorage.getItem(HINT_KEY)) return;
+        localStorage.setItem(HINT_KEY, '1');
+        setTimeout(() => showToast('Pinch or double-tap to zoom • tap an item to edit', { duration: 4200 }), 600);
+      } catch (e) { /* ignore */ }
+    }
+
+    // =========================================================================
+    // GLOBAL LISTENERS: pointer, pinch-zoom, wheel, keyboard, resize
+    // =========================================================================
+    function setupGlobalListeners() {
+      const wr = $('workspace');
+
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointercancel', onPointerUp);
+      wr.addEventListener('pointerdown', onWorkspacePointerDown);
+
+      // Close the search results when tapping elsewhere
+      document.addEventListener('pointerdown', (e) => {
+        if (!e.target.closest('#search-wrap')) $('search-results-popover').hidden = true;
+      });
+
+      // ---- Two-finger pinch + pan ----
+      let pinch = null;
+      const dist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      wr.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 2) return;
+        interaction = { type: null }; tapCandidate = null; bgTap = null;
+        const [a, b] = e.touches;
+        const mid = { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
+        const r = $('floor-canvas').getBoundingClientRect();
+        pinch = { d: dist(a, b), z: zoomLevel, cx: (mid.x - r.left) / zoomLevel, cy: (mid.y - r.top) / zoomLevel };
+      }, { passive: true });
+      wr.addEventListener('touchmove', (e) => {
+        if (!pinch || e.touches.length !== 2) return;
+        if (e.cancelable) e.preventDefault();
+        const [a, b] = e.touches;
+        const mid = { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
+        userZoomed = true;
+        setZoom(pinch.z * (dist(a, b) / pinch.d), { x: mid.x, y: mid.y, cx: pinch.cx, cy: pinch.cy });
+      }, { passive: false });
+      const endPinch = (e) => { if (e.touches.length < 2) pinch = null; };
+      wr.addEventListener('touchend', endPinch);
+      wr.addEventListener('touchcancel', endPinch);
+
+      // ---- Ctrl/⌘ + wheel (and trackpad pinch) ----
+      wr.addEventListener('wheel', (e) => {
+        if (!(e.ctrlKey || e.metaKey)) return;
+        e.preventDefault();
+        userZoomed = true;
+        setZoom(zoomLevel * Math.exp(-e.deltaY * 0.01), { x: e.clientX, y: e.clientY });
+      }, { passive: false });
+
+      // ---- Resize / orientation ----
+      let lastW = wr.clientWidth, lastH = wr.clientHeight;
+      new ResizeObserver(() => {
+        const w = wr.clientWidth, h = wr.clientHeight;
+        const widthChanged = Math.abs(w - lastW) > 2;
+        const heightChanged = Math.abs(h - lastH) > 2;
+        lastW = w; lastH = h;
+        // On phones the on-screen keyboard changes the height only; don't re-fit for that.
+        if (!userZoomed && (widthChanged || (heightChanged && !isMobileViewport()))) fitCanvasToScreen();
+      }).observe(wr);
+      window.addEventListener('resize', () => {
+        if (!isMobileViewport()) closeAllSheets();
+        updateInspector();
+      });
+      window.addEventListener('load', () => { if (!userZoomed) fitCanvasToScreen(); });
+
+      // ---- Printing from the browser menu / Ctrl+P too ----
+      window.addEventListener('beforeprint', () => {
+        selectedId = null; setSelectedClass(); closeAllSheets();
+        $('print-date').textContent = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      });
+
+      // ---- Keyboard ----
+      window.addEventListener('keydown', (e) => {
+        const t = e.target;
+        const typing = t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable;
+
+        if (e.key === 'Escape') {
+          if (!$('help-modal').hidden) { closeHelp(); return; }
+          if (!$('confirm-modal').hidden) { closeConfirmModal(); return; }
+          if (!$('info-drawer').hidden) { toggleInfo(); return; }
+          if (!typing) { $('search-results-popover').hidden = true; deselectAll(); }
+          return;
+        }
+        if (typing) return;
+
+        const mod = e.ctrlKey || e.metaKey;
+        const k = e.key.toLowerCase();
+        if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+        else if (mod && k === 'y') { e.preventDefault(); redo(); }
+        else if (mod && k === 'd') { e.preventDefault(); duplicateSelected(); }
+        else if (mod && (k === '=' || k === '+')) { e.preventDefault(); zoomBy(1.25); }
+        else if (mod && k === '-') { e.preventDefault(); zoomBy(0.8); }
+        else if (mod && k === '0') { e.preventDefault(); fitCanvasToScreen(); }
+        else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) { e.preventDefault(); deleteSelected(); }
+        else if (selectedId && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          e.preventDefault();
+          const step = e.shiftKey ? 10 : 2;
+          nudgeSelected(e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0, e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0);
+        }
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+
+  </script>
+</body>
+</html>
